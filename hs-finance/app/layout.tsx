@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Home and School Books",
+  title: "Home and School Booking",
   description: "Accounting software for use by D203 H&S treasurers.",
 };
 
