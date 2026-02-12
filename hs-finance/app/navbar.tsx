@@ -38,14 +38,14 @@ export function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="rounded-md border border-[#F87171] px-3 py-1 text-[#D1D5DB] hover:bg-[#F3F4F6]"
+                className="rounded-md border border-[#F87171] px-3 py-1 text-[#D1D5DB] hover:bg-[#F87171]"
               >
                 Profile
               </button>
 
               {/* Dropdown Menu */}
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-40 rounded-md border border-[#D1D5DB] bg-white shadow-sm">
+                <div className="absolute right-0 mt-2 w-40 rounded-md border border-[#F87171] bg-white shadow-sm">
                   {!isSignedIn ? (
                     <button
                       onClick={() => {
