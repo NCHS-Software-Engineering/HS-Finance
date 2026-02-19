@@ -1,10 +1,9 @@
-
 "use client";
 import { useState, useEffect } from "react";
 
 type Account = {
-    id: number;
-    name: string;
+    ID: number;
+    AccountName: string;
 };
 
 export default function ChartAccounts() {
@@ -21,7 +20,7 @@ export default function ChartAccounts() {
     return (
         <div>
             {accounts.map((account)=> (
-                <div>{account.name}</div>
+                <div key={account.ID}>{account.AccountName}</div>
             ))}
         </div>
     )
