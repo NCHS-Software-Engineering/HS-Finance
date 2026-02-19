@@ -19,3 +19,6 @@ export async function GET() {
         return NextResponse.json({error: "Failed to fetch chart of accounts."}, {status: 500});
     }
 } 
+export async function POST(req: Request) {
+    
+}
