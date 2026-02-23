@@ -16,7 +16,14 @@ export async function GET() {
         // Get the session information and check that the session is valid with a user email
         const session = await getServerSession(authOptions);
         if (!session || !session.user?.email) {
-            return NextResponse.json({error: "Not Authenticated"}, {status: 401})
+            return NextResponse.json({error: "Not Authenticated"}, {status: 401});
+        }
+
+        // Check that the user has access (All users can view Chart of Accounts)
+        const userEmail = session.user.email;
+        const [allowedUser] = await connection.execute<RowDataPacket[]>('SELECT ID FROM User WHERE Email = ?', [userEmail]);
+        if (allowedUser.length===0){
+            return NextResponse.json({error: "Access Denied"}, {status: 403});
         }
 
         const [rows] = await connection.execute("SELECT ID, AccountName FROM Account ORDER BY AccountName ASC");

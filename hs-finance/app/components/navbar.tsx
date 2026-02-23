@@ -1,9 +1,14 @@
 "use client";
 import { useState } from "react";
 
+// Using the <Link> component instead of HTML <a> links is preferable in Next.js for internal links
+// External links or file downloads should still use <a>
+import Link from "next/link";
+import { signIn, signOut, useSession } from "next-auth/react";
+
 export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isSignedIn, setIsSignedIn] = useState(false);
+  const {data: session} = useSession();
 
   return (
     <nav className="w-full border-b border-[#F87171] bg-black">
@@ -16,81 +21,66 @@ export function Navbar() {
         <div className="flex items-center gap-8 text-sm relative">
           {/* Navigation Links */}
           <div className="flex items-center gap-8 text-sm">
-            <a
+            <Link
               href="/"
               className="text-[#F87171] hover:text-[#ffffff] hover:underline underline-offset-4"
             >
               Home
-            </a>
-            <a
+            </Link>
+            <Link
               href="/transactions"
               className="text-[#F87171] hover:text-[#ffffff] hover:underline underline-offset-4"
             >
               Transactions
-            </a>
-            <a
+            </Link>
+            <Link
               href="/settings"
               className="text-[#F87171] hover:text-[#ffffff] hover:underline underline-offset-4"
             >
               Settings
-            </a>
-            {/* Profile Button */}
-            <div className="relative">
-              <button
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="rounded-md border border-[#F87171] px-3 py-1 text-[#D1D5DB] hover:bg-[#F87171]"
-              >
-                Profile
-              </button>
+            </Link>
+            {// Sign In when signed out, Profile dropdown when signed in
+              session ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setMenuOpen(!menuOpen)}
+                    className="rounded-md border border-[#F87171] px-3 py-1 text-[#D1D5DB] hover:bg-[#F87171]"
+                  >
+                    Profile
+                  </button>
+                  {menuOpen && (
+                  <div className="absolute right-0 mt-2 w-40 rounded-md border border-[#F87171] bg-white shadow-sm">
+                      <>
+                        <button
+                          className="block w-full px-4 py-2 text-left text-sm text-[#4B5563] hover:bg-[#F3F4F6]"
+                        >
+                          Account
+                        </button>
 
-              {/* Dropdown Menu */}
-              {menuOpen && (
-                <div className="absolute right-0 mt-2 w-40 rounded-md border border-[#F87171] bg-white shadow-sm">
-                  {!isSignedIn ? (
-                    <button
-                      onClick={() => {
-                        setIsSignedIn(true);
-                        setMenuOpen(false);
-
-                        /*
-                        BACKEND REQUIRED:
-                        This is where you would call your authentication system
-                        (e.g., JWT login, OAuth, Firebase, NextAuth, etc.)
-                        to properly sign in the user.
-                        */
-                      }}
-                      className="block w-full px-4 py-2 text-left text-sm text-[#4B5563] hover:bg-[#F3F4F6]"
-                    >
-                      Sign In
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        className="block w-full px-4 py-2 text-left text-sm text-[#4B5563] hover:bg-[#F3F4F6]"
-                      >
-                        Account
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setIsSignedIn(false);
-                          setMenuOpen(false);
-
-                          /*
-                          BACKEND REQUIRED:
-                          This is where you would clear session cookies,
-                          invalidate tokens, or call your logout API.
-                          */
-                        }}
-                        className="block w-full px-4 py-2 text-left text-sm text-[#B91C1C] hover:bg-[#F3F4F6]"
-                      >
-                        Sign Out
-                      </button>
-                    </>
+                        <button
+                          onClick={() => {
+                            setMenuOpen(false);
+                            signOut();
+                          }}
+                          className="block w-full px-4 py-2 text-left text-sm text-[#B91C1C] hover:bg-[#F3F4F6]"
+                        >
+                          Sign Out
+                        </button>
+                      </>
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
+              ) : (
+                <div className="relative">
+                  <button
+                    onClick={() => signIn()}
+                    className="rounded-md border border-[#F87171] px-3 py-1 text-[#D1D5DB] hover:bg-[#F87171]"
+                  >
+                    Sign In
+                  </button>
+                </div>
+              )
+            }
           </div>
         </div>
       </div>

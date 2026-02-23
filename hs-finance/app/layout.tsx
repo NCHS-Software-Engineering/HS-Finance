@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { PropsWithChildren } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Navbar } from "./components/navbar";
 import "./globals.css";
+import { Providers } from "./lib/providers";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,22 +23,17 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+  children
+}: Readonly<PropsWithChildren>) {
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#F9FAFB] text-[#1F2937]`}
       >
-        {/* Navbar */}
-        <Navbar />
-
-        {/* Page Content */}
-        <main className="mx-auto max-w-6xl px-8 py-8">
+        <Providers>
+          <Navbar/>
           {children}
-        </main>
+        </Providers>
       </body>
     </html>
   );
