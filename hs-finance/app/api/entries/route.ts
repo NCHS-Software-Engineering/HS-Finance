@@ -22,9 +22,13 @@ export async function GET() {
         // Returns all if user account type is Dev, otherwise returns registers for school
         const userEmail = session.user.email;
         const [rows] = await connection.execute(
-            `SELECT Register.ID, Register.RegisterName FROM Register, User 
-            WHERE User.Email = ? AND (User.SchoolID = Register.SchoolID OR User.AccountType = 'Dev') 
-            ORDER BY RegisterName ASC`
+            `SELECT 
+            Entry.ID, Entry.TransactionID, Entry.Location, Entry.Memo, Entry.Date, Entry.RegisterID, Entry.Void, Entry.Rec, Entry.EntryType
+            FROM Entry, User, Register
+            WHERE User.Email = ? 
+            AND (User.SchoolID = Register.SchoolID OR User.AccountType = 'Dev')
+            AND Register.ID = Entry.RegisterID
+            ORDER BY Entry.ID ASC`
         , [userEmail]);
         return NextResponse.json(rows);
     }
