@@ -1,43 +1,43 @@
 "use client";
 import { useState, useEffect } from "react";
 
-type Entry = {
+type Fund = {
     ID: number;
-    TransactionID: number;
-    Location: string;
-    Memo: string;
-    Date: Date;
-    RegisterID: number;
-    Void: boolean;
-    Rec: boolean;
-    EntryType: string;
+    EntryID: number;
+    AccountID: number;
+    Target: string;
+    Description: string;
+    PaymentMethod: string;
+    ReferenceNumber: number;
+    Amount: number;
+    Class: string;
 };
 
 export default function Registers() {
     //Creates a list of accounts and fetches from server
-    const [entries, setEntries] = useState<Entry[]>([]);
+    const [funds, setFunds] = useState<Fund[]>([]);
     useEffect(()=> {
-        async function fetchEntries() {
-            const res = await fetch("/api/entries");
+        async function fetchFunds(){
+            const res = await fetch("/api/funds");
             const data = await res.json();
-            setEntries(data);
+            setFunds(data);
         }
-        fetchEntries();
+        fetchFunds();
     }, []);
 
     //Creates a div of divs with account names, has an empty div if no accounts fetched.
     return (
         <div>
-            {(entries.length>0) && (entries.map((entry)=> (
-                <div key={entry.ID}>{
-                                        entry.TransactionID+", "+
-                                        entry.Location+", "+
-                                        entry.Memo+", "+
-                                        entry.Date+", "+
-                                        entry.RegisterID+", "+
-                                        entry.Void+", "+
-                                        entry.Rec+", "+
-                                        entry.EntryType
+            {(funds.length>0) && (funds.map((fund)=> (
+                <div key={fund.ID}>{
+                                        fund.EntryID+", "+
+                                        fund.AccountID+", "+
+                                        fund.Target+", "+
+                                        fund.Description+", "+
+                                        fund.PaymentMethod+", "+
+                                        fund.ReferenceNumber+", "+
+                                        fund.Amount+", "+
+                                        fund.Class
                                     }</div>
             )))}
         </div>

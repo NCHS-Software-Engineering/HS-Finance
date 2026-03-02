@@ -14,7 +14,7 @@ export function Navbar() {
     <nav className="w-full border-b border-[#F87171] bg-black">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-4">
         {/* App Name */}
-        <div className="text-lg font-semibold tracking-tight">
+        <div className="text-lg font-semibold tracking-tight text-white">
           FinanceApp
         </div>
         {/* Right Side */}
