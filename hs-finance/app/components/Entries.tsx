@@ -1,45 +1,73 @@
 "use client";
 import { useState, useEffect } from "react";
-
-type Entry = {
-    ID: number;
-    TransactionID: number;
-    Location: string;
-    Memo: string;
-    Date: Date;
-    RegisterID: number;
-    Void: boolean;
-    Rec: boolean;
-    EntryType: string;
-};
+import { Entry } from "../types/index";
 
 export default function Registers() {
-    //Creates a list of accounts and fetches from server
-    const [entries, setEntries] = useState<Entry[]>([]);
-    useEffect(()=> {
-        async function fetchEntries() {
-            const res = await fetch("/api/entries");
-            const data = await res.json();
-            setEntries(data);
-        }
-        fetchEntries();
-    }, []);
+  const [entries, setEntries] = useState<Entry[]>([]);
 
-    //Creates a div of divs with account names, has an empty div if no accounts fetched.
-    return (
-        <div>
-            {(entries.length>0) && (entries.map((entry)=> (
-                <div key={entry.ID}>{
-                                        entry.TransactionID+", "+
-                                        entry.Location+", "+
-                                        entry.Memo+", "+
-                                        entry.Date+", "+
-                                        entry.RegisterID+", "+
-                                        entry.Void+", "+
-                                        entry.Rec+", "+
-                                        entry.EntryType
-                                    }</div>
-            )))}
-        </div>
-    )
+  useEffect(() => {
+    async function fetchEntries() {
+      const res = await fetch("/api/entries");
+      if (!res.ok) return;
+      const data = await res.json();
+      
+      setEntries(data);
+    }
+    fetchEntries();
+  }, []);
+
+  return (
+    <div className="flex justify-center p-6">
+      <div className="border rounded-lg shadow-sm overflow-hidden">
+
+        <table className="w-full text-sm border-collapse">
+
+          {/* Header */}
+          <thead className="bg-gray-200 text-gray-700">
+            <tr>
+              <th className="text-left p-3 border-b">Transaction</th>
+              <th className="text-left p-3 border-b">Location</th>
+              <th className="text-left p-3 border-b">Memo</th>
+              <th className="text-left p-3 border-b">Date</th>
+              <th className="text-left p-3 border-b">Register</th>
+              <th className="text-left p-3 border-b">Void</th>
+              <th className="text-left p-3 border-b">Rec</th>
+              <th className="text-left p-3 border-b">Type</th>
+            </tr>
+          </thead>
+
+          {/* Body */}
+          <tbody>
+            {(!(entries.length===0))&&(entries.map((entry) => {
+              return (
+                <tr
+                  key={entry.ID}
+                  className="border-b hover:bg-gray-50 transition"
+                >
+                  <td className="p-3">
+                    {entry.TransactionID}
+                  </td>
+
+                  <td className="p-3">{entry.Location}</td>
+
+                  <td className="p-3 text-gray-600">{entry.Memo}</td>
+
+                  <td className="p-3">{entry.Date instanceof Date ? entry.Date.toLocaleDateString() : entry.Date}</td>
+
+                  <td className="p-3">{entry.RegisterID}</td>
+
+                  <td className="p-3">{String(entry.Void)}</td>
+
+                  <td className="p-3">{String(entry.Rec)}</td>
+
+                  <td className="p-3">{entry.EntryType}</td>
+                </tr>
+              );
+            }))}
+          </tbody>
+
+        </table>
+      </div>
+    </div>
+  );
 }
