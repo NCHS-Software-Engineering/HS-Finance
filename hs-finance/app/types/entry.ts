@@ -8,4 +8,5 @@
     Void: boolean;
     Rec: boolean;
     EntryType: string;
+    FundIDs: number[];
 };

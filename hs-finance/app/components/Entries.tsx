@@ -1,20 +1,53 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Entry } from "../types/index";
+import { Entry, Fund } from "../types/index";
 
 export default function Registers() {
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [funds, setFunds] = useState<Fund[]>([]);
 
   useEffect(() => {
     async function fetchEntries() {
       const res = await fetch("/api/entries");
       if (!res.ok) return;
-      const data = await res.json();
+      const entryData = await res.json();
+      const entryFormatted: Entry[] = entryData.map((entry: any) => {
+        ID: entry.ID;
+        TransactionID: entry.TransactionID;
+        Location: entry.Location;
+        Memo: entry.Memo;
+        Date: entry.Date;
+        RegisterID: entry;
+        Void: entry.Void;
+        Rec: entry.Rec;
+        EntryType: entry.EntryType;
+        FundIDs: [];
+      });
       
-      setEntries(data);
+
+      const fundRes = await fetch("/api/funds");
+      if (!fundRes.ok) return;
+      const fundData = await fundRes.json();
+      const fundFormatted: Fund[] = fundData.map((fund: any) => {
+        ID: fund.ID;
+        EntryID: fund.EntryID;
+        AccountID: fund.AccountID;
+        Target: fund.Target;
+        Description: fund.Description;
+        PaymentMethod: fund.PaymentMethod;
+        ReferenceNumber: fund.ReferenceNumber;
+        Amount: fund.Amount;
+        Class: fund.Class;
+      });
+
+      funds.map((fund) => {(fund.EntryID < entries.length) && (entries[fund.EntryID].FundIDs.push(fund.ID))});
+      
+      setFunds(fundFormatted);
+      setEntries(entryFormatted);
     }
     fetchEntries();
   }, []);
+
 
   return (
     <div className="flex justify-center p-6">
@@ -33,6 +66,7 @@ export default function Registers() {
               <th className="text-left p-3 border-b">Void</th>
               <th className="text-left p-3 border-b">Rec</th>
               <th className="text-left p-3 border-b">Type</th>
+              <th className="text-left p-3 border-b">Funds</th>
             </tr>
           </thead>
 
@@ -61,6 +95,8 @@ export default function Registers() {
                   <td className="p-3">{String(entry.Rec)}</td>
 
                   <td className="p-3">{entry.EntryType}</td>
+
+                  <td className="p-3">{(entry.FundIDs)&&entry.FundIDs.length}</td>
                 </tr>
               );
             }))}
