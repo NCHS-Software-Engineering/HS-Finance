@@ -11,36 +11,36 @@ export default function Registers() {
       const res = await fetch("/api/entries");
       if (!res.ok) return;
       const entryData = await res.json();
-      const entryFormatted: Entry[] = entryData.map((entry: any) => {
-        ID: entry.ID;
-        TransactionID: entry.TransactionID;
-        Location: entry.Location;
-        Memo: entry.Memo;
-        Date: entry.Date;
-        RegisterID: entry;
-        Void: entry.Void;
-        Rec: entry.Rec;
-        EntryType: entry.EntryType;
-        FundIDs: [];
-      });
+      const entryFormatted: Entry[] = entryData.map((entry: any) => ({
+        ID: entry.ID,
+        TransactionID: entry.TransactionID,
+        Location: entry.Location,
+        Memo: entry.Memo,
+        Date: entry.Date,
+        RegisterID: entry,
+        Void: entry.Void,
+        Rec: entry.Rec,
+        EntryType: entry.EntryType,
+        FundIDs: []
+      }));
       
 
       const fundRes = await fetch("/api/funds");
       if (!fundRes.ok) return;
       const fundData = await fundRes.json();
-      const fundFormatted: Fund[] = fundData.map((fund: any) => {
-        ID: fund.ID;
-        EntryID: fund.EntryID;
-        AccountID: fund.AccountID;
-        Target: fund.Target;
-        Description: fund.Description;
-        PaymentMethod: fund.PaymentMethod;
-        ReferenceNumber: fund.ReferenceNumber;
-        Amount: fund.Amount;
-        Class: fund.Class;
-      });
+      const fundFormatted: Fund[] = fundData.map((fund: any) => ({
+        ID: fund.ID,
+        EntryID: fund.EntryID,
+        AccountID: fund.AccountID,
+        Target: fund.Target,
+        Description: fund.Description,
+        PaymentMethod: fund.PaymentMethod,
+        ReferenceNumber: fund.ReferenceNumber,
+        Amount: fund.Amount,
+        Class: fund.Class
+      }));
 
-      funds.map((fund) => {(fund.EntryID < entries.length) && (entries[fund.EntryID].FundIDs.push(fund.ID))});
+      fundFormatted.map((fund) => {(fund.EntryID < entries.length) && (entries[fund.EntryID].FundIDs.push(fund.ID))});
       
       setFunds(fundFormatted);
       setEntries(entryFormatted);
@@ -96,12 +96,15 @@ export default function Registers() {
 
                   <td className="p-3">{entry.EntryType}</td>
 
-                  <td className="p-3">{(entry.FundIDs)&&entry.FundIDs.length}</td>
+                  <td className="p-3">{
+                    ((entry.FundIDs.length>0)&&entry.FundIDs.map((FundID) => (
+                      <span key={FundID}>yo</span>
+                    )))
+                  }</td>
                 </tr>
               );
             }))}
           </tbody>
-
         </table>
       </div>
     </div>
