@@ -3,7 +3,7 @@
     TransactionID: number;
     Location: string;
     Memo: string;
-    Date: Date;
+    Date: string;
     RegisterID: number;
     Void: boolean;
     Rec: boolean;

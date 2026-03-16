@@ -1,7 +1,5 @@
-import ChartAccounts from "./components/ChartAccounts";
-import Registers from "./components/Registers";
+
 import Entries from "./components/Entries";
-import Funds from "./components/Funds";
 
 export default function Home() {
   return (
