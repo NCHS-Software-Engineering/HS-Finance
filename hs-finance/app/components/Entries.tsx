@@ -1,132 +1,161 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Entry, Fund } from "../types/index";
 
-export default function Registers() {
+type Entry = {
+  ID: number;
+  TransactionID: number;
+  Location: string;
+  Memo: string;
+  Date: Date;
+  RegisterID: number;
+  Void: boolean;
+  Rec: boolean;
+  EntryType: string;
+};
+
+type Fund = {
+  ID: number;
+  EntryID: number;
+  AccountID: number;
+  Target: string;
+  Description: string;
+  PaymentMethod: string;
+  ReferenceNumber: number;
+  Amount: number;
+  Class: string;
+};
+
+export default function Entries() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [funds, setFunds] = useState<Fund[]>([]);
-  let balance = 0;
 
   useEffect(() => {
-    async function fetchEntries() {
-      const res = await fetch("/api/entries");
-      if (!res.ok) return;
-      const entryData = await res.json();
-      const entryFormatted: Entry[] = entryData.map((entry: any) => ({
-        ID: entry.ID,
-        TransactionID: entry.TransactionID,
-        Location: entry.Location,
-        Memo: entry.Memo,
-        Date: new Date(entry.Date).toLocaleString("en-US", {
-                        month: "short",
-                        day: "2-digit",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    }),
-        RegisterID: entry.RegisterID,
-        Void: entry.Void,
-        Rec: entry.Rec,
-        EntryType: entry.EntryType,
-        FundIDs: []
-      }));
-      
+    async function fetchData() {
+      try {
+        const entriesRes = await fetch("/api/entries");
+        const entriesData = await entriesRes.json();
+        setEntries(entriesData);
 
-      const fundRes = await fetch("/api/funds");
-      if (!fundRes.ok) return;
-      const fundData = await fundRes.json();
-      const fundFormatted: Fund[] = fundData.map((fund: any) => ({
-        ID: fund.ID,
-        EntryID: fund.EntryID,
-        AccountID: fund.AccountID,
-        Target: fund.Target,
-        Description: fund.Description,
-        PaymentMethod: fund.PaymentMethod,
-        ReferenceNumber: fund.ReferenceNumber,
-        Amount: fund.Amount,
-        Class: fund.Class
-      }));
-
-      fundFormatted.forEach((fund, index) => {
-      if (fund.EntryID < entryFormatted.length) {
-        entryFormatted[fund.EntryID].FundIDs.push(index);
+        const fundsRes = await fetch("/api/funds");
+        const fundsData = await fundsRes.json();
+        setFunds(fundsData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
       }
-    });
-      
-      setFunds(fundFormatted);
-      setEntries(entryFormatted);
     }
-    fetchEntries();
+    fetchData();
   }, []);
 
+  const getFundsForEntry = (entryID: number) => {
+    return funds.filter((fund) => fund.EntryID === entryID);
+  };
 
   return (
-    <div className="flex justify-center p-16">
-      <div className="border rounded-lg shadow-sm overflow-hidden">
+    <div className="min-h-screen flex justify-center bg-gray-100 p-12">
+      <div className="w-full max-w-6xl bg-white rounded-xl shadow-lg p-6">
 
-        <table className="w-full text-sm border-collapse">
+        <h1 className="text-2xl font-semibold text-gray-700 mb-6 text-center">
+          Register Entries
+        </h1>
 
-          {/* Header */}
-          <thead className="bg-gray-200 text-gray-700">
-            <tr>
-              <th className="text-left p-3 border-b">Date</th>
-              <th className="text-left p-3 border-b">Type</th>
-              <th className="text-left p-3 border-b">
-                <div>Payee</div>
-                <div>Account</div>
-              </th>
-              <th className="text-left p-3 border-b">Memo</th>
-              <th className="text-left p-3 border-b">
-                <div>Class</div>
-                <div>Location</div>
-              </th>
-              <th className="text-left p-3 border-b">Payment</th>
-              <th className="text-left p-3 border-b">Deposit</th>
-              <th className="text-left p-3 border-b">Info</th>
-              <th className="text-left p-3 border-b">Balance</th>
+        <table className="w-full border-collapse text-sm">
+
+          {/* HEADER */}
+          <thead>
+            <tr className="bg-gray-200 text-gray-700">
+              <th className="p-3 text-left">Transaction</th>
+              <th className="p-3 text-left">Location</th>
+              <th className="p-3 text-left">Memo</th>
+              <th className="p-3 text-left">Date</th>
+              <th className="p-3 text-left">Register</th>
+              <th className="p-3 text-left">Void</th>
+              <th className="p-3 text-left">Rec</th>
+              <th className="p-3 text-left">Type</th>
             </tr>
           </thead>
 
-          {/* Body */}
           <tbody>
-            {(!(entries.length===0))&&(entries.map((entry) => {
-              let fundSum: number = 0;
-              if (funds != null){
-                for(let i = 0; i < entry.FundIDs.length; i++){
-                  fundSum+=funds[entry.FundIDs[i]].Amount;
-                }
-              }
-              balance+=fundSum
-              return (
-                <tr
-                  key={entry.ID}
-                  className="border-b hover:bg-gray-50 transition"
-                >
-                  <td className="p-3">
-                    {entry.Date}
-                  </td>
+            {entries.length > 0 ? (
+              entries.map((entry) => {
+                const entryFunds = getFundsForEntry(entry.ID);
 
-                  <td className="p-3">{entry.Location}</td>
+                return (
+                  <>
+                    {/* ENTRY ROW */}
+                    <tr
+                      key={`entry-${entry.ID}`}
+                      className="border-b hover:bg-gray-50"
+                    >
+                      <td className="p-3">{entry.TransactionID}</td>
+                      <td className="p-3">{entry.Location}</td>
+                      <td className="p-3 text-gray-600">{entry.Memo}</td>
+                      <td className="p-3">
+                        {new Date(entry.Date).toLocaleDateString()}
+                      </td>
+                      <td className="p-3">{entry.RegisterID}</td>
+                      <td className="p-3">{entry.Void ? "Yes" : "No"}</td>
+                      <td className="p-3">{entry.Rec ? "Yes" : "No"}</td>
+                      <td className="p-3">{entry.EntryType}</td>
+                    </tr>
 
-                  <td className="p-3 text-gray-600">{entry.Memo}</td>
+                    {/* FUNDS ROW */}
+                    {entryFunds.length > 0 && (
+                      <tr key={`funds-${entry.ID}`}>
+                        <td colSpan={8} className="p-4 bg-gray-50">
 
-                  <td className="p-3">{}</td>
+                          <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
 
-                  <td className="p-3">{entry.RegisterID}</td>
+                            <table className="w-full text-sm">
 
-                  <td className="p-3">{String(entry.Void)}</td>
+                              <thead className="bg-gray-100 text-gray-600">
+                                <tr>
+                                  <th className="p-2 text-left">Account</th>
+                                  <th className="p-2 text-left">Target</th>
+                                  <th className="p-2 text-left">Description</th>
+                                  <th className="p-2 text-left">Payment</th>
+                                  <th className="p-2 text-left">Reference</th>
+                                  <th className="p-2 text-left">Amount</th>
+                                  <th className="p-2 text-left">Class</th>
+                                </tr>
+                              </thead>
 
-                  <td className="p-3">{String(entry.Rec)}</td>
+                              <tbody>
+                                {entryFunds.map((fund) => (
+                                  <tr
+                                    key={`fund-${fund.ID}`}
+                                    className="border-t hover:bg-gray-50"
+                                  >
+                                    <td className="p-2">{fund.AccountID}</td>
+                                    <td className="p-2">{fund.Target}</td>
+                                    <td className="p-2">{fund.Description}</td>
+                                    <td className="p-2">{fund.PaymentMethod}</td>
+                                    <td className="p-2">{fund.ReferenceNumber}</td>
+                                    <td className="p-2 font-medium">
+                                      ${fund.Amount.toFixed(2)}
+                                    </td>
+                                    <td className="p-2">{fund.Class}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
 
-                  <td className="p-3">{entry.EntryType}</td>
+                            </table>
+                          </div>
 
-                  <td className="p-3">{
-                    balance-fundSum
-                  }</td>
-                </tr>
-              );
-            }))}
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={8} className="text-center p-8 text-gray-500">
+                  No entries found
+                </td>
+              </tr>
+            )}
           </tbody>
+
         </table>
       </div>
     </div>
