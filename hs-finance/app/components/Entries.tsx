@@ -47,11 +47,11 @@ export default function Registers() {
         Class: fund.Class
       }));
 
-      fundFormatted.forEach((fund) => {
-        if (fund.EntryID < entryFormatted.length) {
-          entryFormatted[fund.EntryID].FundIDs.push(fund.ID);
-        }
-      });
+      fundFormatted.forEach((fund, index) => {
+      if (fund.EntryID < entryFormatted.length) {
+        entryFormatted[fund.EntryID].FundIDs.push(index);
+      }
+    });
       
       setFunds(fundFormatted);
       setEntries(entryFormatted);
