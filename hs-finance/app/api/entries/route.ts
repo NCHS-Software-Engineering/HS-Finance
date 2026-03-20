@@ -29,12 +29,14 @@ export async function GET(request: Request) {
         const direction = searchParams.get("direction");
         const register = searchParams.get("register");
         const location = searchParams.get("location");
-        const order = searchParams.get("order");
 
         let query = 
         `SELECT 
             Entry.ID, Entry.TransactionID, Entry.Location, Entry.Memo, Entry.Date, Entry.RegisterID, Entry.Void, Entry.Rec, Entry.EntryType
-            FROM Entry, User, Register
+            FROM Entry
+            JOIN Register ON Register.ID = Entry.RegisterID
+            JOIN User ON (User.SchoolID = Register.SchoolID OR User.AccountType = 'Dev')
+            JOIN Transaction ON Entry.TransactionID = Transaction.ID
             WHERE User.Email = ? 
             AND (User.SchoolID = Register.SchoolID OR User.AccountType = 'Dev')
             AND Register.ID = Entry.RegisterID`;
@@ -45,13 +47,13 @@ export async function GET(request: Request) {
             query += ` AND Entry.EntryType = ?`;
             params.push(type);
         }
-        if (rec) {
+        if (rec !== null) {
             query += ` AND Entry.Rec = ?`;
-            params.push(rec);
+            params.push(rec === "true" ? "1" : "0");
         }
-        if (voided) {
-            query += ` AND Entry.Void = ?`;
-            params.push(voided);
+        if (voided !== null) {
+            query += ` AND Entry.Rec = ?`;
+            params.push(voided === "true" ? "1" : "0");
         }
 
         if (startDate && endDate) {
@@ -65,18 +67,21 @@ export async function GET(request: Request) {
             params.push(endDate);
         }
         
-        if (type) {
-            query += ` AND Entry.EntryType = ?`;
-            params.push(type);
+        if (direction) {
+            query += ` AND Transaction.MoneyIn = ?`;
+            params.push(direction);
         }
-        if (type) {
-            query += ` AND Entry.EntryType = ?`;
-            params.push(type);
+        if (register) {
+            query += ` AND Entry.RegisterID = ?`;
+            params.push(register);
         }
-        if (type) {
-            query += ` AND Entry.EntryType = ?`;
-            params.push(type);
+
+        if (location) {
+            query += ` AND Entry.Location LIKE ?`;
+            params.push(`%${location}%`);
         }
+
+        query += ` ORDER BY Entry.Date DESC`;
 
         // Returns all if user account type is Dev, otherwise returns registers for school
         const [rows] = await connection.execute(
@@ -91,33 +96,3 @@ export async function GET(request: Request) {
     }
 };
 
-
-export async function POST() {
-    // We try to execute a query on our database to select all of the competencies sorted by the skill name
-    // The resulting rows are sent as JSON
-    try {
-        // Get the session information and check that the session is valid with a user email
-        const session = await getServerSession(authOptions);
-        if (!session || !session.user?.email) {
-            return NextResponse.json({error: "Not Authenticated"}, {status: 401});
-        }
-
-        // Returns all if user account type is Dev, otherwise returns registers for school
-        const userEmail = session.user.email;
-        const [rows] = await connection.execute(
-            `SELECT 
-            Entry.ID, Entry.TransactionID, Entry.Location, Entry.Memo, Entry.Date, Entry.RegisterID, Entry.Void, Entry.Rec, Entry.EntryType
-            FROM Entry, User, Register
-            WHERE User.Email = ? 
-            AND (User.SchoolID = Register.SchoolID OR User.AccountType = 'Dev')
-            AND Register.ID = Entry.RegisterID
-            ORDER BY Entry.ID ASC`
-        , [userEmail]);
-        return NextResponse.json(rows);
-    }
-    // If there is an error in the try block, the JSON response sense includes the error message and status code (500 indicates a general server error)
-    catch (err) {
-        console.log(err);
-        return NextResponse.json({error: "Failed to fetch chart of accounts."}, {status: 500});
-    }
-};
