@@ -96,3 +96,19 @@ export async function GET(request: Request) {
     }
 };
 
+export async function POST(request: Request) {
+    try{
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user?.email) {
+            return NextResponse.json({error: "Not Authenticated"}, {status: 401});
+        }
+        const {ID, TransactionID, Location, Memo, Date, RegisterID, Void: boolean;
+    Rec: boolean;
+    EntryType:} = await request.json();
+
+    }
+    catch (err) {
+        console.log(err);
+        return NextResponse.json({error: "Failed to add entry"}, {status: 500});
+    }
+}
