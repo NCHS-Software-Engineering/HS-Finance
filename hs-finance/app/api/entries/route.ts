@@ -102,9 +102,13 @@ export async function POST(request: Request) {
         if (!session || !session.user?.email) {
             return NextResponse.json({error: "Not Authenticated"}, {status: 401});
         }
-        const {ID, TransactionID, Location, Memo, Date, RegisterID, Void: boolean;
-    Rec: boolean;
-    EntryType:} = await request.json();
+        const {TransactionID, Location, Memo, Date, RegisterID, Void, Rec, EntryType} = await request.json();
+        
+        const [entryResult] = await connection.execute<ResultSetHeader>(
+            "INSERT INTO Entry (TransactionID, Location, Memo, Date, RegisterID, Void, Rec, EntryType) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [TransactionID, Location, Memo, Date, RegisterID, Void, Rec, EntryType]
+        );
+        const entryID = entryResult.insertId;
 
     }
     catch (err) {
