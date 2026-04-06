@@ -2,15 +2,11 @@
 import { useState, useEffect } from "react";
 import type { Entry, Fund } from "../types";
 
-// Style Guide Tokens
 const sg = {
-    // Primary Interaction
     brand: "#FCA5A5",
     brandHover: "#F87171",
     secondary: "#FECACA",
     highlight: "#FFE4E4",
-
-    // Neutrals
     textPrimary: "#1F2937",
     textSecondary: "#4B5563",
     textMuted: "#6B7280",
@@ -18,19 +14,13 @@ const sg = {
     bgPanel: "#FFFFFF",
     border: "#D1D5DB",
     disabled: "#9CA3AF",
-
-    // Supporting UI
     hoverBg: "#F3F4F6",
     disabledBtn: "#E5E7EB",
-
-    // Status
     success: "#16A34A",
     successBg: "#DCFCE7",
     error: "#B91C1C",
     warning: "#F59E0B",
     info: "#0EA5E9",
-
-    // Font
     font: "'IBM Plex Mono', monospace",
 };
 
@@ -68,9 +58,8 @@ export default function Entries() {
         let deposit = 0;
         let payment = 0;
         getFundsForEntry(entryID).forEach(fund => {
-            const cls = fund.Class.toLowerCase();
-            if (cls === "deposit" || cls === "income") deposit += fund.Amount;
-            else if (cls === "payment" || cls === "expense" || cls === "spend") payment += fund.Amount;
+            if (fund.Amount > 0) deposit += fund.Amount;
+            else if (fund.Amount < 0) payment += Math.abs(fund.Amount);
         });
         return {
             deposit: deposit > 0 ? deposit : null,
@@ -78,11 +67,14 @@ export default function Entries() {
         };
     };
 
+    // ✅ Always toggle — no hasFunds gate
     const toggleExpanded = (entryID: number) => {
-        const newSet = new Set(expandedEntries);
-        if (newSet.has(entryID)) newSet.delete(entryID);
-        else newSet.add(entryID);
-        setExpandedEntries(newSet);
+        setExpandedEntries(prev => {
+            const next = new Set(prev);
+            if (next.has(entryID)) next.delete(entryID);
+            else next.add(entryID);
+            return next;
+        });
     };
 
     const formatDate = (date: Date | string) => {
@@ -94,7 +86,7 @@ export default function Entries() {
     };
 
     const formatCurrency = (amount: number) =>
-        new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+        new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Math.abs(amount));
 
     if (loading) {
         return (
@@ -108,7 +100,7 @@ export default function Entries() {
     }
 
     const entryColumns = "32px 1fr 1.2fr 1.5fr 110px 70px 70px 90px 100px 100px 80px";
-    const fundColumns = "90px 100px 1fr 1.2fr 110px 100px 80px";
+    const fundColumns = "90px 100px 1fr 1.2fr 110px 100px";
 
     const cellStyle: React.CSSProperties = {
         display: "flex",
@@ -194,21 +186,27 @@ export default function Entries() {
                     return (
                         <div key={entry.ID} style={{ borderBottom: `1px solid ${sg.border}` }}>
 
-                            {/* Entry Row */}
+                            {/* Entry Row — ✅ always clickable */}
                             <div
-                                onClick={hasFunds ? () => toggleExpanded(entry.ID) : undefined}
+                                onClick={() => toggleExpanded(entry.ID)}
+                                data-expanded={isExpanded ? "true" : "false"}
                                 onMouseEnter={e => {
-                                    if (hasFunds)(e.currentTarget as HTMLDivElement).style.backgroundColor = sg.hoverBg;
+                                    (e.currentTarget as HTMLDivElement).style.backgroundColor = sg.hoverBg;
                                 }}
                                 onMouseLeave={e => {
-                                    (e.currentTarget as HTMLDivElement).style.backgroundColor = rowBg;
+                                    // ✅ read live expanded state from DOM attribute, not stale closure
+                                    const el = e.currentTarget as HTMLDivElement;
+                                    const expanded = el.dataset.expanded === "true";
+                                    el.style.backgroundColor = expanded
+                                        ? sg.highlight
+                                        : isEven ? sg.bgPanel : sg.bgPage;
                                 }}
                                 style={{
                                     display: "grid",
                                     gridTemplateColumns: entryColumns,
                                     padding: "0.75rem 1rem",
                                     backgroundColor: rowBg,
-                                    cursor: hasFunds ? "pointer" : "default",
+                                    cursor: "pointer", // ✅ always pointer
                                     fontSize: "0.875rem",
                                     color: sg.textPrimary,
                                     fontFamily: sg.font,
@@ -216,19 +214,18 @@ export default function Entries() {
                                     alignItems: "center",
                                 }}
                             >
-                                {/* Chevron */}
+                                {/* Chevron — show for all rows, dim if no funds */}
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    {hasFunds && (
-                                        <span style={{
-                                            fontSize: "0.6rem",
-                                            color: sg.textMuted,
-                                            display: "inline-block",
-                                            transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
-                                            userSelect: "none",
-                                        }}>
-                                            ▶
-                                        </span>
-                                    )}
+                                    <span style={{
+                                        fontSize: "0.6rem",
+                                        color: hasFunds ? sg.textMuted : sg.disabledBtn,
+                                        display: "inline-block",
+                                        transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                                        transition: "transform 0.15s ease",
+                                        userSelect: "none",
+                                    }}>
+                                        ▶
+                                    </span>
                                 </div>
 
                                 <div style={cellStyle}>{entry.TransactionID}</div>
@@ -239,12 +236,10 @@ export default function Entries() {
                                 <div style={cellStyle}>{entry.Void ? "Yes" : "No"}</div>
                                 <div style={cellStyle}>{entry.Rec ? "Yes" : "No"}</div>
 
-                                {/* Deposit — success green (status color, meaningful use) */}
                                 <div style={{ ...cellStyle, color: deposit !== null ? sg.success : sg.textPrimary, fontWeight: deposit !== null ? 600 : 400 }}>
                                     {deposit !== null ? formatCurrency(deposit) : ""}
                                 </div>
 
-                                {/* Payment — error red (status color, meaningful use) */}
                                 <div style={{ ...cellStyle, color: payment !== null ? sg.error : sg.textPrimary, fontWeight: payment !== null ? 600 : 400 }}>
                                     {payment !== null ? formatCurrency(payment) : ""}
                                 </div>
@@ -252,100 +247,99 @@ export default function Entries() {
                                 <div style={cellStyle}>{entry.EntryType}</div>
                             </div>
 
-                            {/* Expanded Funds Panel */}
-                            {hasFunds && isExpanded && (
+                            {/* Expanded Panel */}
+                            {isExpanded && (
                                 <div style={{
                                     backgroundColor: sg.highlight,
                                     borderTop: `1px solid ${sg.secondary}`,
                                     borderLeft: `4px solid ${sg.brand}`,
                                     marginLeft: "1rem",
                                 }}>
-                                    {/* Funds Sub-header */}
-                                    <div style={{
-                                        display: "grid",
-                                        gridTemplateColumns: fundColumns,
-                                        padding: "0.5rem 1rem",
-                                        fontWeight: 600,
-                                        fontSize: "0.7rem",
-                                        color: sg.textMuted,
-                                        textTransform: "uppercase",
-                                        letterSpacing: "0.05em",
-                                        borderBottom: `1px solid ${sg.secondary}`,
-                                        fontFamily: sg.font,
-                                    }}>
-                                        <div style={cellStyle}>Fund ID</div>
-                                        <div style={cellStyle}>Account ID</div>
-                                        <div style={cellStyle}>Target</div>
-                                        <div style={cellStyle}>Description</div>
-                                        <div style={cellStyle}>Pay Method</div>
-                                        <div style={cellStyle}>Amount</div>
-                                        <div style={cellStyle}>Class</div>
-                                    </div>
-
-                                    {/* Fund Rows */}
-                                    {entryFunds.map((fund, fi) => {
-                                        const isIncome = fund.Class.toLowerCase() === "deposit" || fund.Class.toLowerCase() === "income";
-                                        const fundRowBg = fi % 2 === 0 ? sg.highlight : sg.bgPanel;
-
-                                        return (
-                                            <div
-                                                key={fund.ID}
-                                                style={{
-                                                    display: "grid",
-                                                    gridTemplateColumns: fundColumns,
-                                                    padding: "0.6rem 1rem",
-                                                    fontSize: "0.85rem",
-                                                    color: sg.textPrimary,
-                                                    backgroundColor: fundRowBg,
-                                                    borderBottom: fi < entryFunds.length - 1 ? `1px solid ${sg.secondary}` : "none",
-                                                    fontFamily: sg.font,
-                                                    fontWeight: 400,
-                                                    alignItems: "center",
-                                                }}
-                                            >
-                                                {/* Fund ID — brand color since it's an interactive/key identifier */}
-                                                <div style={{ ...cellStyle, fontWeight: 600, color: sg.brandHover }}>
-                                                    #{fund.ID}
-                                                </div>
-                                                <div style={cellStyle}>{fund.AccountID}</div>
-                                                <div style={cellStyle}>{fund.Target}</div>
-                                                <div style={cellStyle}>{fund.Description}</div>
-                                                <div style={cellStyle}>{fund.PaymentMethod}</div>
-                                                <div style={{
-                                                    ...cellStyle,
-                                                    fontWeight: 600,
-                                                    color: isIncome ? sg.success : sg.error,
-                                                }}>
-                                                    {formatCurrency(fund.Amount)}
-                                                </div>
-                                                {/* Class badge using brand palette */}
-                                                <div style={{ ...cellStyle }}>
-                                                    <span style={{
-                                                        backgroundColor: sg.secondary,
-                                                        color: sg.textPrimary,
-                                                        borderRadius: "9999px",
-                                                        padding: "2px 10px",
-                                                        fontSize: "0.7rem",
-                                                        fontWeight: 500,
-                                                        fontFamily: sg.font,
-                                                    }}>
-                                                        {fund.Class}
-                                                    </span>
-                                                </div>
+                                    {/* ✅ Empty state if no funds */}
+                                    {!hasFunds ? (
+                                        <div style={{
+                                            padding: "1rem 1.25rem",
+                                            fontSize: "0.8rem",
+                                            color: sg.textMuted,
+                                            fontFamily: sg.font,
+                                            fontStyle: "italic",
+                                        }}>
+                                            No funds linked to this entry.
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {/* Funds Sub-header */}
+                                            <div style={{
+                                                display: "grid",
+                                                gridTemplateColumns: fundColumns,
+                                                padding: "0.5rem 1rem",
+                                                fontWeight: 600,
+                                                fontSize: "0.7rem",
+                                                color: sg.textMuted,
+                                                textTransform: "uppercase",
+                                                letterSpacing: "0.05em",
+                                                borderBottom: `1px solid ${sg.secondary}`,
+                                                fontFamily: sg.font,
+                                            }}>
+                                                <div style={cellStyle}>Fund ID</div>
+                                                <div style={cellStyle}>Account ID</div>
+                                                <div style={cellStyle}>Target</div>
+                                                <div style={cellStyle}>Description</div>
+                                                <div style={cellStyle}>Pay Method</div>
+                                                <div style={cellStyle}>Amount</div>
                                             </div>
-                                        );
-                                    })}
 
-                                    {/* Fund count */}
-                                    <div style={{
-                                        padding: "0.4rem 1rem",
-                                        fontSize: "0.75rem",
-                                        color: sg.textMuted,
-                                        fontFamily: sg.font,
-                                        fontWeight: 400,
-                                    }}>
-                                        {entryFunds.length} fund{entryFunds.length !== 1 ? "s" : ""} linked to this entry
-                                    </div>
+                                            {/* Fund Rows */}
+                                            {entryFunds.map((fund, fi) => {
+                                                const isIncome = fund.Amount > 0;
+                                                const fundRowBg = fi % 2 === 0 ? sg.highlight : sg.bgPanel;
+
+                                                return (
+                                                    <div
+                                                        key={fund.ID}
+                                                        style={{
+                                                            display: "grid",
+                                                            gridTemplateColumns: fundColumns,
+                                                            padding: "0.6rem 1rem",
+                                                            fontSize: "0.85rem",
+                                                            color: sg.textPrimary,
+                                                            backgroundColor: fundRowBg,
+                                                            borderBottom: fi < entryFunds.length - 1 ? `1px solid ${sg.secondary}` : "none",
+                                                            fontFamily: sg.font,
+                                                            fontWeight: 400,
+                                                            alignItems: "center",
+                                                        }}
+                                                    >
+                                                        <div style={{ ...cellStyle, fontWeight: 600, color: sg.brandHover }}>
+                                                            #{fund.ID}
+                                                        </div>
+                                                        <div style={cellStyle}>{fund.AccountID}</div>
+                                                        <div style={cellStyle}>{fund.Target}</div>
+                                                        <div style={cellStyle}>{fund.Description}</div>
+                                                        <div style={cellStyle}>{fund.PaymentMethod}</div>
+                                                        <div style={{
+                                                            ...cellStyle,
+                                                            fontWeight: 600,
+                                                            color: isIncome ? sg.success : sg.error,
+                                                        }}>
+                                                            {formatCurrency(fund.Amount)}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {/* Fund count */}
+                                            <div style={{
+                                                padding: "0.4rem 1rem",
+                                                fontSize: "0.75rem",
+                                                color: sg.textMuted,
+                                                fontFamily: sg.font,
+                                                fontWeight: 400,
+                                            }}>
+                                                {entryFunds.length} fund{entryFunds.length !== 1 ? "s" : ""} linked to this entry
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </div>

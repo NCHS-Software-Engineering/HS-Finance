@@ -23,7 +23,7 @@ export async function GET() {
         const userEmail = session.user.email;
         const [rows] = await connection.execute(
             `SELECT 
-            Fund.ID, Fund.EntryID, Fund.AccountID, Fund.Target, Fund.Description, Fund.PaymentMethod, Fund.ReferenceNumber, Fund.Amount, Fund.Class
+            Fund.ID, Fund.EntryID, Fund.AccountID, Fund.Target, Fund.Description, Fund.PaymentMethod, Fund.ReferenceNumber, Fund.Amount
             FROM Entry, User, Register, Fund
             WHERE User.Email = ? 
             AND (User.SchoolID = Register.SchoolID OR User.AccountType = 'Dev')
