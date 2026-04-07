@@ -5,7 +5,17 @@ import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { authOptions } from "@/api/auth/[...nextauth]/authOptions";
 import connection from "@/lib/db";
 
-// GET: fetch all accounts
+// Helper: fetch the user's role from the DB
+async function getUserRole(email: string): Promise<string | null> {
+  const [rows] = await connection.execute<RowDataPacket[]>(
+    "SELECT Role FROM User WHERE Email = ?",
+    [email]
+  );
+  if (rows.length === 0) return null;
+  return rows[0].Role;
+}
+
+// GET: fetch all accounts (any logged-in user)
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -13,10 +23,9 @@ export async function GET() {
       return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
     }
 
-    const userEmail = session.user.email;
     const [allowedUser] = await connection.execute<RowDataPacket[]>(
       "SELECT ID FROM User WHERE Email = ?",
-      [userEmail]
+      [session.user.email]
     );
 
     if (allowedUser.length === 0) {
@@ -24,7 +33,7 @@ export async function GET() {
     }
 
     const [rows] = await connection.execute(
-      "SELECT ID, AccountName FROM Account ORDER BY AccountName ASC"
+      "SELECT ID, AccountName FROM Account ORDER BY ID ASC"
     );
     return NextResponse.json(rows);
   } catch (err) {
@@ -33,12 +42,18 @@ export async function GET() {
   }
 }
 
-// POST: add a new account
+// POST: add a new account (head treasurer only)
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
+    }
+
+    // 🔒 Check that the user is a head treasurer
+    const role = await getUserRole(session.user.email);
+    if (role !== "HeadTreasurer" && role !== "Dev") {
+      return NextResponse.json({ error: "Access Denied: Head Treasurer only" }, { status: 403 });
     }
 
     const { AccountName } = await req.json();
@@ -58,12 +73,18 @@ export async function POST(req: Request) {
   }
 }
 
-// DELETE: remove an account by ID
+// DELETE: remove an account by ID (head treasurer only)
 export async function DELETE(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
+    }
+
+    // 🔒 Check that the user is a head treasurer
+    const role = await getUserRole(session.user.email);
+    if (role !== "HeadTreasurer" && role !== "Dev") {
+      return NextResponse.json({ error: "Access Denied: Head Treasurer only" }, { status: 403 });
     }
 
     const { id } = await req.json();
