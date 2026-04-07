@@ -81,7 +81,7 @@ export async function GET(request: Request) {
             params.push(`%${location}%`);
         }
 
-        query += ` ORDER BY Entry.Date DESC`;
+        query += ` ORDER BY Entry.ID ASC`;
 
         // Returns all if user account type is Dev, otherwise returns registers for school
         const [rows] = await connection.execute(
