@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { ResultSetHeader, RowDataPacket} from "mysql2/promise";
 import { authOptions } from "@/api/auth/[...nextauth]/authOptions";
 import connection from "@/lib/db";
+import { z } from "zod";
 
 // A GET request is an HTTP method to retrieve some data from a server based on a request
 // App Router automatically looks for exported functions based on HTTP methods such as GET
@@ -39,3 +40,58 @@ export async function GET() {
         return NextResponse.json({error: "Failed to fetch chart of accounts."}, {status: 500});
     }
 };
+
+export async function POST(request: Request) {
+    try{
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user?.email) {
+            return NextResponse.json({error: "Not Authenticated"}, {status: 401});
+        }
+        
+        const schema = z.object({
+            TransactionID: z.number(),
+            Location: z.string(),
+            Memo: z.string(),
+            Date: z.string(),
+            RegisterID: z.number(),
+            Void: z.number(),
+            Rec: z.number(),
+            EntryType: z.string(),
+            ClassID: z.number()
+        });
+
+        const data = schema.parse(await request.json());
+
+        const {
+            TransactionID,
+            Location,
+            Memo,
+            Date,
+            RegisterID,
+            Void,
+            Rec,
+            EntryType,
+            ClassID
+        } = data;
+        
+        const [registers] = await connection.execute<RowDataPacket[]>(
+            "SELECT Register.ID, Register.SchoolID, User.SchoolID, User.Email FROM Register, User WHERE User.Email = ? AND User.SchoolID = Register.SchoolID AND Register.ID = ?",
+            [session.user.email, RegisterID]
+        );
+        if (registers.length === 0){
+            return NextResponse.json({error: "Access Denied"}, {status: 403});
+        }
+
+        const [entryResult] = await connection.execute<ResultSetHeader>(
+            "INSERT INTO Entry (TransactionID, Location, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [TransactionID, Location, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID]
+        );
+        const entryID = entryResult.insertId;
+        return NextResponse.json({ success: true, entryID });
+
+    }
+    catch (err) {
+        console.log(err);
+        return NextResponse.json({error: "Failed to add entry"}, {status: 500});
+    }
+}
