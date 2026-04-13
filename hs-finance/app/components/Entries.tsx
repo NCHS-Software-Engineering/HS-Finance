@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import type { Entry, Fund, Transaction } from "../types";
+import type { Entry, Fund, Transaction, Register } from "../types";
 
 const sg = {
     brand: "#FCA5A5",
@@ -52,6 +52,8 @@ export default function Entries() {
     const [entries, setEntries] = useState<Entry[]>([]);
     const [funds, setFunds] = useState<Fund[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [registers, setRegisters] = useState<Register[]>([]);
+    const [selectedRegisterID, setSelectedRegisterID] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [expandedEntries, setExpandedEntries] = useState<Set<number>>(new Set());
     const [showForm, setShowForm] = useState(false);
@@ -74,28 +76,45 @@ export default function Entries() {
     useEffect(() => {
         async function fetchData() {
             try {
-                const entriesRes = await fetch("/api/entries");
+                const [entriesRes, fundsRes, transactionsRes, registersRes] = await Promise.all([
+                    fetch("/api/entries"),
+                    fetch("/api/funds"),
+                    fetch("/api/transactions"),
+                    fetch("/api/registers"),
+                ]);
+
                 const entriesData = await entriesRes.json();
                 setEntries(Array.isArray(entriesData) ? entriesData : entriesData.entries ?? []);
 
-                const fundsRes = await fetch("/api/funds");
                 const fundsData = await fundsRes.json();
                 setFunds(Array.isArray(fundsData) ? fundsData : fundsData.funds ?? []);
 
-                const transactionsRes = await fetch("/api/transactions");
                 const transactionsData = await transactionsRes.json();
                 setTransactions(Array.isArray(transactionsData) ? transactionsData : transactionsData.transactions ?? []);
+
+                const registersData = await registersRes.json();
+                const registerList: Register[] = Array.isArray(registersData) ? registersData : registersData.registers ?? [];
+                setRegisters(registerList);
+
+                if (registerList.length > 0) {
+                    setSelectedRegisterID(String(registerList[0].ID));
+                }
             } catch (error) {
                 console.error("Error fetching data:", error);
                 setEntries([]);
                 setFunds([]);
                 setTransactions([]);
+                setRegisters([]);
             } finally {
                 setLoading(false);
             }
         }
         fetchData();
     }, []);
+
+    const filteredEntries = selectedRegisterID
+        ? entries.filter(e => String(e.RegisterID) === selectedRegisterID)
+        : entries;
 
     const onSubmit = async (data: EntryFormData) => {
         setIsSubmitting(true);
@@ -171,7 +190,7 @@ export default function Entries() {
     const formatCurrency = (amount: number) =>
         new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Math.abs(amount));
 
-    const totalDeposits = entries.reduce((sum, entry) => {
+    const totalDeposits = filteredEntries.reduce((sum, entry) => {
         const transaction = transactions.find(t => Number(t.ID) === Number(entry.TransactionID));
         if (transaction?.MoneyIn === 1) {
             return sum + getFundsForEntry(entry.ID).reduce((s, f) => s + f.Amount, 0);
@@ -179,7 +198,7 @@ export default function Entries() {
         return sum;
     }, 0);
 
-    const totalPayments = entries.reduce((sum, entry) => {
+    const totalPayments = filteredEntries.reduce((sum, entry) => {
         const transaction = transactions.find(t => Number(t.ID) === Number(entry.TransactionID));
         if (transaction?.MoneyIn !== 1) {
             return sum + getFundsForEntry(entry.ID).reduce((s, f) => s + Math.abs(f.Amount), 0);
@@ -246,6 +265,8 @@ export default function Entries() {
         fontFamily: sg.font,
     };
 
+    const selectedRegister = registers.find(r => String(r.ID) === selectedRegisterID);
+
     return (
         <div style={{ backgroundColor: sg.bgPage, minHeight: "100vh", padding: "2rem", fontFamily: sg.font }}>
 
@@ -262,7 +283,8 @@ export default function Entries() {
                         Entries
                     </h1>
                     <p style={{ color: sg.textMuted, fontSize: "0.875rem", marginTop: "0.25rem", fontWeight: 400 }}>
-                        {entries.length} {entries.length === 1 ? "entry" : "entries"}
+                        {filteredEntries.length} {filteredEntries.length === 1 ? "entry" : "entries"}
+                        {selectedRegister ? ` · ${selectedRegister.RegisterName}` : ""}
                     </p>
                 </div>
 
@@ -301,11 +323,60 @@ export default function Entries() {
                 <div style={{
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "flex-end",
+                    justifyContent: "space-between",
                     padding: "0.65rem 1rem",
                     borderBottom: `1px solid ${sg.border}`,
                     backgroundColor: sg.bgPanel,
+                    gap: "1rem",
                 }}>
+                    {/* Register Selector — left side */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                        <label style={{
+                            fontSize: "0.65rem",
+                            fontWeight: 600,
+                            color: sg.textMuted,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.06em",
+                            fontFamily: sg.font,
+                            whiteSpace: "nowrap",
+                        }}>
+                            Register
+                        </label>
+                        <select
+                            value={selectedRegisterID}
+                            onChange={e => {
+                                setSelectedRegisterID(e.target.value);
+                                setExpandedEntries(new Set());
+                            }}
+                            style={{
+                                padding: "0.4rem 2rem 0.4rem 0.6rem",
+                                fontFamily: sg.font,
+                                fontSize: "0.8rem",
+                                color: sg.textPrimary,
+                                backgroundColor: sg.bgPanel,
+                                border: `1px solid ${sg.border}`,
+                                borderRadius: "4px",
+                                outline: "none",
+                                cursor: "pointer",
+                                appearance: "none",
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+                                backgroundRepeat: "no-repeat",
+                                backgroundPosition: "right 0.5rem center",
+                                minWidth: "180px",
+                            }}
+                        >
+                            {registers.length === 0 && (
+                                <option value="">No registers found</option>
+                            )}
+                            {registers.map(r => (
+                                <option key={r.ID} value={String(r.ID)}>
+                                    {r.RegisterName}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Add Entry Button — right side */}
                     <button
                         onClick={() => setShowForm(v => !v)}
                         style={{
@@ -601,13 +672,13 @@ export default function Entries() {
                     <div style={cellStyle}>Type</div>
                 </div>
 
-                {entries.length === 0 && (
+                {filteredEntries.length === 0 && (
                     <div style={{ padding: "2rem", textAlign: "center", color: sg.disabled, fontFamily: sg.font }}>
-                        No entries found.
+                        {selectedRegisterID ? "No entries found for this register." : "No entries found."}
                     </div>
                 )}
 
-                {entries.map((entry, index) => {
+                {filteredEntries.map((entry, index) => {
                     const entryFunds = getFundsForEntry(entry.ID);
                     const isExpanded = expandedEntries.has(entry.ID);
                     const hasFunds = entryFunds.length > 0;
