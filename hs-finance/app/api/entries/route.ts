@@ -21,7 +21,7 @@ export async function GET(request: Request) {
         }
 
         const { searchParams } = new URL(request.url);
-
+        const accountID = searchParams.get("accountID");
         const type = searchParams.get("type");
         const rec = searchParams.get("rec");
         const voided = searchParams.get("void");
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 
         let query = 
         `SELECT 
-            Entry.ID, Entry.TransactionID, Entry.Location, Entry.Memo, Entry.Date, Entry.RegisterID, Entry.Void, Entry.Rec, Entry.EntryType
+            Entry.ID, Entry.TransactionID,Entry.AccountID, Entry.Location, Entry.Memo, Entry.Date, Entry.RegisterID, Entry.Void, Entry.Rec, Entry.EntryType
             FROM Entry
             JOIN Register ON Register.ID = Entry.RegisterID
             JOIN User ON (User.SchoolID = Register.SchoolID OR User.AccountType = 'Dev')
@@ -81,7 +81,10 @@ export async function GET(request: Request) {
             query += ` AND Entry.ClassID = ?`;
             params.push(classID);
         }
-
+        if (accountID) {
+            query += ` AND Entry.AccountID = ?`;
+            params.push(accountID);
+        }
         if (location) {
             query += ` AND Entry.Location LIKE ?`;
             params.push(`%${location}%`);
@@ -102,6 +105,7 @@ export async function GET(request: Request) {
     }
 };
 
+
 export async function POST(request: Request) {
     try{
         const session = await getServerSession(authOptions);
@@ -110,45 +114,44 @@ export async function POST(request: Request) {
         }
         
         const schema = z.object({
-            EntryID: z.number(),
+            TransactionID: z.number(),
+            Location: z.string(),
             AccountID: z.number(),
-            Target: z.string(),
-            Description: z.string(),
-            PaymentMethod: z.string(),
-            ReferenceNumber: z.number(),
-            Amount: z.number()
+            Memo: z.string(),
+            Date: z.string(),
+            RegisterID: z.number(),
+            Void: z.number(),
+            Rec: z.number(),
+            EntryType: z.string(),
+            ClassID: z.number()
         });
 
         const data = schema.parse(await request.json());
 
         const {
-            EntryID,
+            TransactionID,
+            Location,
             AccountID,
-            Target,
-            Description,
-            PaymentMethod,
-            ReferenceNumber,
-            Amount
+            Memo,
+            Date,
+            RegisterID,
+            Void,
+            Rec,
+            EntryType,
+            ClassID
         } = data;
-
+        
         const [registers] = await connection.execute<RowDataPacket[]>(
-            `SELECT Register.ID, Register.SchoolID, User.SchoolID, User.Email, Entry.ID, Entry.RegisterID FROM Register, User, Entry
-            WHERE User.Email = ? AND User.SchoolID = Register.SchoolID AND Entry.RegisterID = Register.ID AND Entry.ID = ?`,
-            [session.user.email, EntryID]
+            "SELECT Register.ID, Register.SchoolID, User.SchoolID, User.Email FROM Register, User WHERE User.Email = ? AND User.SchoolID = Register.SchoolID AND Register.ID = ?",
+            [session.user.email, RegisterID]
         );
         if (registers.length === 0){
             return NextResponse.json({error: "Access Denied"}, {status: 403});
         }
 
         const [entryResult] = await connection.execute<ResultSetHeader>(
-            "INSERT INTO Fund (EntryID, AccountID, Target, Description, PaymentMethod, ReferenceNumber, Amount) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            [EntryID,
-            AccountID,
-            Target,
-            Description,
-            PaymentMethod,
-            ReferenceNumber,
-            Amount]
+            "INSERT INTO Entry (TransactionID, Location, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID) VALUES (?, ?,?, ?, ?, ?, ?, ?, ?, ?)",
+            [TransactionID, Location,AccountID, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID]
         );
         const entryID = entryResult.insertId;
         return NextResponse.json({ success: true, entryID });
