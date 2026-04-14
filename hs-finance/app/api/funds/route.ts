@@ -95,3 +95,42 @@ export async function POST(request: Request) {
         return NextResponse.json({error: "Failed to add entry"}, {status: 500});
     }
 }
+
+export async function DEL(request: Request) {
+    try{
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user?.email) {
+            return NextResponse.json({error: "Not Authenticated"}, {status: 401});
+        }
+        
+        const schema = z.object({
+            ID: z.number()
+        });
+
+        const data = schema.parse(await request.json());
+
+        const {
+            ID
+        } = data;
+
+        const [registers] = await connection.execute<RowDataPacket[]>(
+            `SELECT Register.ID, Register.SchoolID, User.SchoolID, User.Email, Entry.ID, Entry.RegisterID FROM Register, User, Entry
+            WHERE User.Email = ? AND User.SchoolID = Register.SchoolID AND Entry.RegisterID = Register.ID AND Entry.ID = Fund.EntryID AND Fund.ID = ?`,
+            [session.user.email, ID]
+        );
+        if (registers.length === 0){
+            return NextResponse.json({error: "Access Denied"}, {status: 403});
+        }
+
+        const [fundResult] = await connection.execute<ResultSetHeader>(
+            "DELETE FROM Fund WHERE Fund.EntryID = ?",
+            [ID]
+        );
+        return NextResponse.json({ success: true, fundResult });
+
+    }
+    catch (err) {
+        console.log(err);
+        return NextResponse.json({error: "Failed to add entry"}, {status: 500});
+    }
+}
