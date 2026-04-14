@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { ResultSetHeader, RowDataPacket} from "mysql2/promise";
 import { authOptions } from "@/api/auth/[...nextauth]/authOptions";
 import connection from "@/lib/db";
+import { z } from "zod";
 
 // A GET request is an HTTP method to retrieve some data from a server based on a request
 // App Router automatically looks for exported functions based on HTTP methods such as GET
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
         const direction = searchParams.get("direction");
         const register = searchParams.get("register");
         const location = searchParams.get("location");
+        const classID = searchParams.get("classID");
 
         let query = 
         `SELECT 
@@ -75,6 +77,10 @@ export async function GET(request: Request) {
             query += ` AND Entry.RegisterID = ?`;
             params.push(register);
         }
+        if (classID) {
+            query += ` AND Entry.ClassID = ?`;
+            params.push(classID);
+        }
 
         if (location) {
             query += ` AND Entry.Location LIKE ?`;
@@ -96,3 +102,60 @@ export async function GET(request: Request) {
     }
 };
 
+export async function POST(request: Request) {
+    try{
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user?.email) {
+            return NextResponse.json({error: "Not Authenticated"}, {status: 401});
+        }
+        
+        const schema = z.object({
+            EntryID: z.number(),
+            AccountID: z.number(),
+            Target: z.string(),
+            Description: z.string(),
+            PaymentMethod: z.string(),
+            ReferenceNumber: z.number(),
+            Amount: z.number()
+        });
+
+        const data = schema.parse(await request.json());
+
+        const {
+            EntryID,
+            AccountID,
+            Target,
+            Description,
+            PaymentMethod,
+            ReferenceNumber,
+            Amount
+        } = data;
+
+        const [registers] = await connection.execute<RowDataPacket[]>(
+            `SELECT Register.ID, Register.SchoolID, User.SchoolID, User.Email, Entry.ID, Entry.RegisterID FROM Register, User, Entry
+            WHERE User.Email = ? AND User.SchoolID = Register.SchoolID AND Entry.RegisterID = Register.ID AND Entry.ID = ?`,
+            [session.user.email, EntryID]
+        );
+        if (registers.length === 0){
+            return NextResponse.json({error: "Access Denied"}, {status: 403});
+        }
+
+        const [entryResult] = await connection.execute<ResultSetHeader>(
+            "INSERT INTO Fund (EntryID, AccountID, Target, Description, PaymentMethod, ReferenceNumber, Amount) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [EntryID,
+            AccountID,
+            Target,
+            Description,
+            PaymentMethod,
+            ReferenceNumber,
+            Amount]
+        );
+        const entryID = entryResult.insertId;
+        return NextResponse.json({ success: true, entryID });
+
+    }
+    catch (err) {
+        console.log(err);
+        return NextResponse.json({error: "Failed to add entry"}, {status: 500});
+    }
+}
