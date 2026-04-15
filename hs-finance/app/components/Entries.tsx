@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import type { Entry, Fund, Transaction, Register } from "../types";
+import type { Entry, Fund, Transaction, Register, Class, Account } from "../types";
 
 const sg = {
     brand: "#FCA5A5",
@@ -26,16 +26,18 @@ const sg = {
     font: "'IBM Plex Mono', monospace",
 };
 
+// Matches POST schema exactly
 type EntryFormData = {
     TransactionID: number;
     Location: string;
+    AccountID: number;   // ← ADDED
     Memo: string;
     Date: string;
-    RegisterID: string;
-    Void: boolean;
-    Rec: boolean;
-    EntryType: "single" | "group";
-    ClassID: string;
+    // RegisterID intentionally omitted — injected from selected register
+    Void: boolean;       // checkbox → converted to 0/1 on submit
+    Rec: boolean;        // checkbox → converted to 0/1 on submit
+    EntryType: string;
+    ClassID: number;     // ← number, not string
 };
 
 const TRANSACTION_TYPES = [
@@ -53,6 +55,8 @@ export default function Entries() {
     const [funds, setFunds] = useState<Fund[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [registers, setRegisters] = useState<Register[]>([]);
+    const [classes, setClasses] = useState<Class[]>([]);
+    const [accounts, setAccounts] = useState<Account[]>([]);
     const [selectedRegisterID, setSelectedRegisterID] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [expandedEntries, setExpandedEntries] = useState<Set<number>>(new Set());
@@ -76,11 +80,13 @@ export default function Entries() {
     useEffect(() => {
         async function fetchData() {
             try {
-                const [entriesRes, fundsRes, transactionsRes, registersRes] = await Promise.all([
+                const [entriesRes, fundsRes, transactionsRes, registersRes, accountsRes] = await Promise.all([
                     fetch("/api/entries"),
                     fetch("/api/funds"),
                     fetch("/api/transactions"),
                     fetch("/api/registers"),
+                    //fetch("/api/classes"),
+                    fetch("/api/chartAccounts"),
                 ]);
 
                 const entriesData = await entriesRes.json();
@@ -99,6 +105,12 @@ export default function Entries() {
                 if (registerList.length > 0) {
                     setSelectedRegisterID(String(registerList[0].ID));
                 }
+
+                const classesData = await classesRes.json();
+                setClasses(Array.isArray(classesData) ? classesData : classesData.classes ?? []);
+
+                const accountsData = await accountsRes.json();
+                setAccounts(Array.isArray(accountsData) ? accountsData : accountsData.accounts ?? []);
             } catch (error) {
                 console.error("Error fetching data:", error);
                 setEntries([]);
@@ -121,11 +133,25 @@ export default function Entries() {
         setSubmitError(null);
         setSubmitSuccess(false);
 
+        // Build payload that exactly matches POST schema
+        const payload = {
+            TransactionID: data.TransactionID,
+            Location:      data.Location,
+            AccountID:     data.AccountID,          // ← new field
+            Memo:          data.Memo,
+            Date:          data.Date,
+            RegisterID:    Number(selectedRegisterID), // ← injected, not from form
+            Void:          data.Void ? 1 : 0,       // ← boolean → number
+            Rec:           data.Rec  ? 1 : 0,       // ← boolean → number
+            EntryType:     data.EntryType,
+            ClassID:       data.ClassID,             // ← already number via valueAsNumber
+        };
+
         try {
             const res = await fetch("/api/entries", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data),
+                body: JSON.stringify(payload),
             });
 
             if (!res.ok) throw new Error(`Server responded with ${res.status}`);
@@ -420,6 +446,12 @@ export default function Entries() {
                             fontFamily: sg.font,
                         }}>
                             New Entry
+                            {/* Show user which register this will be saved to */}
+                            {selectedRegister && (
+                                <span style={{ fontWeight: 400, color: sg.textMuted, marginLeft: "0.6rem", textTransform: "none", letterSpacing: 0 }}>
+                                    → {selectedRegister.RegisterName}
+                                </span>
+                            )}
                         </p>
 
                         {submitSuccess && (
@@ -455,10 +487,10 @@ export default function Entries() {
 
                         <form onSubmit={handleSubmit(onSubmit)} noValidate>
 
-                            {/* Row 1: Transaction Type, Location, Memo, Date */}
+                            {/* Row 1: Transaction Type, Location, Account ID, Memo, Date */}
                             <div style={{
                                 display: "grid",
-                                gridTemplateColumns: "1fr 1fr 1.5fr 1fr",
+                                gridTemplateColumns: "1fr 1fr 0.8fr 1.5fr 1fr",
                                 gap: "0.85rem",
                                 marginBottom: "0.85rem",
                             }}>
@@ -494,6 +526,26 @@ export default function Entries() {
                                     )}
                                 </div>
 
+                                {/* ← Account ID dropdown */}
+                                <div>
+                                    <label style={labelStyle}>Account</label>
+                                    <select
+                                        style={{ ...inputStyle(!!errors.AccountID), appearance: "none" }}
+                                        {...register("AccountID", {
+                                            required: "Required",
+                                            valueAsNumber: true,
+                                        })}
+                                    >
+                                        <option value="">Select account…</option>
+                                        {accounts.map(a => (
+                                            <option key={a.ID} value={a.ID}>{a.AccountName}</option>
+                                        ))}
+                                    </select>
+                                    {errors.AccountID && (
+                                        <p style={fieldErrorStyle}>{errors.AccountID.message}</p>
+                                    )}
+                                </div>
+
                                 <div>
                                     <label style={labelStyle}>Memo</label>
                                     <input
@@ -517,35 +569,29 @@ export default function Entries() {
                                 </div>
                             </div>
 
-                            {/* Row 2: Register ID, Class ID, Entry Type, Void, Rec */}
+                            {/* Row 2: Class ID, Entry Type, Void, Rec */}
+                            {/* RegisterID is gone — injected from selectedRegisterID on submit */}
                             <div style={{
                                 display: "grid",
-                                gridTemplateColumns: "1fr 1fr 1fr 80px 80px",
+                                gridTemplateColumns: "1fr 1fr 80px 80px",
                                 gap: "0.85rem",
                                 marginBottom: "1.1rem",
                                 alignItems: "start",
                             }}>
                                 <div>
-                                    <label style={labelStyle}>Register ID</label>
-                                    <input
-                                        type="text"
-                                        style={inputStyle(!!errors.RegisterID)}
-                                        placeholder="e.g. REG-01"
-                                        {...register("RegisterID", { required: "Required" })}
-                                    />
-                                    {errors.RegisterID && (
-                                        <p style={fieldErrorStyle}>{errors.RegisterID.message}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label style={labelStyle}>Class ID</label>
-                                    <input
-                                        type="text"
-                                        style={inputStyle(!!errors.ClassID)}
-                                        placeholder="e.g. CLS-01"
-                                        {...register("ClassID", { required: "Required" })}
-                                    />
+                                    <label style={labelStyle}>Class</label>
+                                    <select
+                                        style={{ ...inputStyle(!!errors.ClassID), appearance: "none" }}
+                                        {...register("ClassID", {
+                                            required: "Required",
+                                            valueAsNumber: true,
+                                        })}
+                                    >
+                                        <option value="">Select class…</option>
+                                        {classes.map(c => (
+                                            <option key={c.ID} value={c.ID}>{c.ClassName}</option>
+                                        ))}
+                                    </select>
                                     {errors.ClassID && (
                                         <p style={fieldErrorStyle}>{errors.ClassID.message}</p>
                                     )}
