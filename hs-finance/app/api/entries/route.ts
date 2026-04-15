@@ -142,7 +142,8 @@ export async function POST(request: Request) {
         } = data;
         
         const [registers] = await connection.execute<RowDataPacket[]>(
-            "SELECT Register.ID, Register.SchoolID, User.SchoolID, User.Email FROM Register, User WHERE User.Email = ? AND User.SchoolID = Register.SchoolID AND Register.ID = ?",
+            `SELECT Register.ID, Register.SchoolID, User.SchoolID, User.Email, User.AccountType FROM Register, User 
+            WHERE User.Email = ? AND User.SchoolID = Register.SchoolID AND (Register.ID = ? OR User.AccountType = "Dev") `,
             [session.user.email, RegisterID]
         );
         if (registers.length === 0){
@@ -182,7 +183,7 @@ export async function DEL(request: Request) {
 
         const [registers] = await connection.execute<RowDataPacket[]>(
             `SELECT Register.ID, Register.SchoolID, User.SchoolID, User.Email, Entry.ID, Entry.RegisterID FROM Register, User, Entry
-            WHERE User.Email = ? AND User.SchoolID = Register.SchoolID AND Entry.RegisterID = Register.ID AND Entry.ID = ?`,
+            WHERE User.Email = ? AND User.SchoolID = Register.SchoolID AND (Entry.RegisterID = Register.ID OR User.AccountType = "Dev") AND Entry.ID = ?`,
             [session.user.email, EntryID]
         );
         if (registers.length === 0){
