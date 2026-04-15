@@ -31,31 +31,23 @@ export default function Home() {
         </p>
 
         {/* 
-          Buttons — this is the key part.
-          If session exists (logged in): show navigation buttons
-          If no session (not logged in): show a Sign In button instead
+          Buttons — if logged in show Go to Transactions, 
+          if not logged in show Sign In button
         */}
-        <div className="mt-10 flex gap-4">
+        <div className="mt-10">
           {session ? (
-            // LOGGED IN — show these two buttons
-            <>
-              <Link href="/transactions" className="bg-[#F87171] text-black font-semibold px-6 py-3 rounded-md hover:opacity-90">
-                Go to Transactions
-              </Link>
-              <Link href="/registers" className="border border-[#F87171] text-[#F87171] font-semibold px-6 py-3 rounded-md hover:bg-[#F87171] hover:text-black">
-                View Registers
-              </Link>
-            </>
+            // LOGGED IN — go straight to transactions
+            <Link href="/transactions" className="bg-[#F87171] text-black font-semibold px-6 py-3 rounded-md hover:opacity-90">
+              Go to Transactions
+            </Link>
           ) : (
-            // NOT LOGGED IN — show sign in button and a message
-            <>
-              <button
-                onClick={() => signIn()}
-                className="bg-[#F87171] text-black font-semibold px-6 py-3 rounded-md hover:opacity-90"
-              >
-                Sign In to Get Started
-              </button>
-            </>
+            // NOT LOGGED IN — show sign in button
+            <button
+              onClick={() => signIn()}
+              className="bg-[#F87171] text-black font-semibold px-6 py-3 rounded-md hover:opacity-90"
+            >
+              Sign In to Get Started
+            </button>
           )}
         </div>
 
