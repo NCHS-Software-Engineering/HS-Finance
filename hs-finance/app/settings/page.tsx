@@ -50,7 +50,7 @@ export default function SettingsPage() {
 
         {/* PREFERENCES SECTION */}
         <div>
-          <h2 className="text-lg font-semibold text-[#F87171] mb-4">Preferences</h2>
+          <h2 className="text-lg font-semibold text-[#F87171] mb-4">Details</h2>
 
           {/* Card */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col gap-4">
