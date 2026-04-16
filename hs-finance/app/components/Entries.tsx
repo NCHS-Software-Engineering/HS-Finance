@@ -80,12 +80,12 @@ export default function Entries() {
     useEffect(() => {
         async function fetchData() {
             try {
-                const [entriesRes, fundsRes, transactionsRes, registersRes, accountsRes] = await Promise.all([
+                const [entriesRes, fundsRes, transactionsRes, registersRes, classesRes, accountsRes] = await Promise.all([
                     fetch("/api/entries"),
                     fetch("/api/funds"),
                     fetch("/api/transactions"),
                     fetch("/api/registers"),
-                    //fetch("/api/classes"),
+                    fetch("/api/class"),
                     fetch("/api/chartAccounts"),
                 ]);
 
@@ -117,6 +117,7 @@ export default function Entries() {
                 setFunds([]);
                 setTransactions([]);
                 setRegisters([]);
+                setClasses([]);
             } finally {
                 setLoading(false);
             }

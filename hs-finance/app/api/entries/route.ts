@@ -54,7 +54,7 @@ export async function GET(request: Request) {
             params.push(rec === "true" ? "1" : "0");
         }
         if (voided !== null) {
-            query += ` AND Entry.Rec = ?`;
+            query += ` AND Entry.Void = ?`;
             params.push(voided === "true" ? "1" : "0");
         }
 
@@ -151,8 +151,8 @@ export async function POST(request: Request) {
         }
 
         const [entryResult] = await connection.execute<ResultSetHeader>(
-            "INSERT INTO Entry (TransactionID, Location, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID) VALUES (?, ?,?, ?, ?, ?, ?, ?, ?, ?)",
-            [TransactionID, Location,AccountID, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID]
+            "INSERT INTO Entry (TransactionID, Location, AccountID, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [TransactionID, Location, AccountID, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID]
         );
         const entryID = entryResult.insertId;
         return NextResponse.json({ success: true, entryID });
