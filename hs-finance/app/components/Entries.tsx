@@ -21,6 +21,10 @@ export default function Entries() {
     const [loading, setLoading] = useState(true);
     const [expandedEntries, setExpandedEntries] = useState<Set<number>>(new Set());
     const [showForm, setShowForm] = useState(false);
+    const [reconciliationMode, setReconciliationMode] = useState(false);
+    const [isSavingReconciliation, setIsSavingReconciliation] = useState(false);
+    const [reconciliationOriginal, setReconciliationOriginal] = useState<Map<number, boolean>>(new Map());
+    const [reconciliationDraft, setReconciliationDraft] = useState<Map<number, boolean>>(new Map());
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -33,7 +37,6 @@ export default function Entries() {
     } = useForm<EntryFormData>({
         defaultValues: {
             Void: false,
-            Rec: false,
         },
     });
 
@@ -104,7 +107,7 @@ export default function Entries() {
             Date:          data.Date,
             RegisterID:    Number(selectedRegisterID), // ← injected, not from form
             Void:          data.Void ? 1 : 0,       // ← boolean → number
-            Rec:           data.Rec  ? 1 : 0,       // ← boolean → number
+            Rec:           0,                       // Reserved for future reconciliation mode
             EntryType:     data.EntryType,
             ClassID:       data.ClassID,             // ← already number via valueAsNumber
         };
@@ -158,6 +161,88 @@ export default function Entries() {
         };
     };
 
+    const getEntrySignedTotal = (entry: Entry) => {
+        const transaction = transactions.find(t => Number(t.ID) === Number(entry.TransactionID));
+        const entryAmount = getFundsForEntry(entry.ID).reduce((sum, fund) => sum + Math.abs(fund.Amount), 0);
+        return transaction?.MoneyIn === 1 ? entryAmount : -entryAmount;
+    };
+
+    const getCurrentRecMap = () => {
+        const map = new Map<number, boolean>();
+        entries.forEach(entry => {
+            map.set(Number(entry.ID), !!entry.Rec);
+        });
+        return map;
+    };
+
+    const getEntryRecValue = (entry: Entry) => {
+        if (!reconciliationMode) return !!entry.Rec;
+        return reconciliationDraft.get(Number(entry.ID)) ?? !!entry.Rec;
+    };
+
+    const handleToggleReconciled = (entryID: number, nextRecValue: boolean) => {
+        if (!reconciliationMode || isSavingReconciliation) return;
+        setReconciliationDraft(prev => {
+            const next = new Map(prev);
+            next.set(Number(entryID), nextRecValue);
+            return next;
+        });
+    };
+
+    const handleToggleReconciliationMode = async () => {
+        setSubmitError(null);
+
+        if (!reconciliationMode) {
+            const currentRecMap = getCurrentRecMap();
+            setReconciliationOriginal(currentRecMap);
+            setReconciliationDraft(new Map(currentRecMap));
+            setShowForm(false);
+            setReconciliationMode(true);
+            return;
+        }
+
+        const updates: Array<{ EntryID: number; Rec: boolean }> = [];
+        reconciliationDraft.forEach((draftRec, entryID) => {
+            const originalRec = reconciliationOriginal.get(entryID) ?? false;
+            if (draftRec !== originalRec) {
+                updates.push({ EntryID: entryID, Rec: draftRec });
+            }
+        });
+
+        if (updates.length === 0) {
+            setReconciliationMode(false);
+            setReconciliationOriginal(new Map());
+            setReconciliationDraft(new Map());
+            return;
+        }
+
+        setIsSavingReconciliation(true);
+        try {
+            const res = await fetch("/api/entries", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ updates }),
+            });
+
+            if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+
+            const updatesByEntry = new Map<number, boolean>();
+            updates.forEach(update => updatesByEntry.set(update.EntryID, update.Rec));
+            setEntries(prev => prev.map(entry => {
+                const nextRec = updatesByEntry.get(Number(entry.ID));
+                return nextRec === undefined ? entry : { ...entry, Rec: nextRec };
+            }));
+
+            setReconciliationMode(false);
+            setReconciliationOriginal(new Map());
+            setReconciliationDraft(new Map());
+        } catch (err) {
+            setSubmitError(err instanceof Error ? err.message : "Failed to save reconciliation changes.");
+        } finally {
+            setIsSavingReconciliation(false);
+        }
+    };
+
     const toggleExpanded = (entryID: number) => {
         setExpandedEntries(prev => {
             const next = new Set(prev);
@@ -195,6 +280,18 @@ export default function Entries() {
     }, 0);
 
     const netTotal = totalDeposits - totalPayments;
+    const reconciliationTotal = reconciliationMode
+        ? filteredEntries.reduce((sum, entry) => {
+            const entryID = Number(entry.ID);
+            const originalRec = reconciliationOriginal.get(entryID) ?? false;
+            const draftRec = reconciliationDraft.get(entryID) ?? originalRec;
+            if (draftRec === originalRec) return sum;
+            const signedTotal = getEntrySignedTotal(entry);
+            return draftRec ? sum + signedTotal : sum - signedTotal;
+        }, 0)
+        : filteredEntries
+            .filter(entry => !!entry.Rec)
+            .reduce((sum, entry) => sum + getEntrySignedTotal(entry), 0);
 
     if (loading) {
         return (
@@ -215,6 +312,8 @@ export default function Entries() {
                 entryCount={filteredEntries.length}
                 selectedRegisterName={selectedRegister?.RegisterName}
                 netTotal={netTotal}
+                reconciliationMode={reconciliationMode}
+                reconciliationTotal={reconciliationTotal}
                 formatCurrency={formatCurrency}
             />
 
@@ -234,10 +333,16 @@ export default function Entries() {
                         setExpandedEntries(new Set());
                     }}
                     showForm={showForm}
-                    onToggleForm={() => setShowForm(v => !v)}
+                    onToggleForm={() => {
+                        if (reconciliationMode) return;
+                        setShowForm(v => !v);
+                    }}
+                    reconciliationMode={reconciliationMode}
+                    isSavingReconciliation={isSavingReconciliation}
+                    onToggleReconciliationMode={handleToggleReconciliationMode}
                 />
 
-                {showForm && (
+                {showForm && !reconciliationMode && (
                     <EntryFormPanel
                         selectedRegister={selectedRegister}
                         accounts={accounts}
@@ -260,9 +365,14 @@ export default function Entries() {
                     transactions={transactions}
                     getFundsForEntry={getFundsForEntry}
                     getDepositPayment={getDepositPayment}
+                    getEntrySignedTotal={getEntrySignedTotal}
                     formatDate={formatDate}
                     formatCurrency={formatCurrency}
                     selectedRegisterID={selectedRegisterID}
+                    reconciliationMode={reconciliationMode}
+                    isSavingReconciliation={isSavingReconciliation}
+                    getEntryRecValue={getEntryRecValue}
+                    onToggleReconciled={handleToggleReconciled}
                 />
             </div>
         </div>

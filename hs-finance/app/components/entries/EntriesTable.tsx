@@ -14,9 +14,14 @@ type EntriesTableProps = {
     transactions: Transaction[];
     getFundsForEntry: (entryID: number) => Fund[];
     getDepositPayment: (entry: Entry) => DepositPayment;
+    getEntrySignedTotal: (entry: Entry) => number;
     formatDate: (date: Date | string) => string;
     formatCurrency: (amount: number) => string;
     selectedRegisterID: string;
+    reconciliationMode: boolean;
+    isSavingReconciliation: boolean;
+    getEntryRecValue: (entry: Entry) => boolean;
+    onToggleReconciled: (entryID: number, nextRecValue: boolean) => void;
 };
 
 const cellStyle: CSSProperties = {
@@ -38,9 +43,14 @@ export default function EntriesTable({
     transactions,
     getFundsForEntry,
     getDepositPayment,
+    getEntrySignedTotal,
     formatDate,
     formatCurrency,
     selectedRegisterID,
+    reconciliationMode,
+    isSavingReconciliation,
+    getEntryRecValue,
+    onToggleReconciled,
 }: EntriesTableProps) {
     return (
         <>
@@ -81,9 +91,11 @@ export default function EntriesTable({
                 const isExpanded = expandedEntries.has(entry.ID);
                 const hasFunds = entryFunds.length > 0;
                 const { deposit, payment } = getDepositPayment(entry);
+                const entrySignedTotal = getEntrySignedTotal(entry);
                 const currentTransaction = transactions.find(t => Number(t.ID) === Number(entry.TransactionID));
                 const isEven = index % 2 === 0;
                 const rowBg = isExpanded ? sg.highlight : isEven ? sg.bgPanel : sg.bgPage;
+                const recValue = getEntryRecValue(entry);
 
                 return (
                     <div key={entry.ID} style={{ borderBottom: `1px solid ${sg.border}` }}>
@@ -128,7 +140,28 @@ export default function EntriesTable({
                             <div style={cellStyle}>{formatDate(entry.Date)}</div>
                             <div style={cellStyle}>{entry.RegisterID}</div>
                             <div style={cellStyle}>{entry.Void ? "Yes" : "No"}</div>
-                            <div style={cellStyle}>{entry.Rec ? "Yes" : "No"}</div>
+                            <div style={cellStyle}>
+                                {reconciliationMode ? (
+                                    <input
+                                        type="checkbox"
+                                        checked={recValue}
+                                        disabled={isSavingReconciliation}
+                                        onClick={e => e.stopPropagation()}
+                                        onChange={e => onToggleReconciled(entry.ID, e.target.checked)}
+                                        title={
+                                            recValue
+                                                ? "Unset reconciliation for this entry"
+                                                : `Mark as reconciled and add ${formatCurrency(entrySignedTotal)} to reconciliation total`
+                                        }
+                                        style={{
+                                            width: "16px",
+                                            height: "16px",
+                                            cursor: isSavingReconciliation ? "not-allowed" : "pointer",
+                                            accentColor: sg.success,
+                                        }}
+                                    />
+                                ) : null}
+                            </div>
                             <div style={{ ...cellStyle, color: deposit !== null ? sg.success : sg.textPrimary, fontWeight: deposit !== null ? 600 : 400 }}>
                                 {deposit !== null ? formatCurrency(deposit) : ""}
                             </div>

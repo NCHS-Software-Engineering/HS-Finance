@@ -5,7 +5,7 @@ export type EntryFormData = {
     Memo: string;
     Date: string;
     Void: boolean;
-    Rec: boolean;
+    Rec?: boolean;
     EntryType: string;
     ClassID: number;
 };

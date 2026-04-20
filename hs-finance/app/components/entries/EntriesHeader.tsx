@@ -4,6 +4,8 @@ type EntriesHeaderProps = {
     entryCount: number;
     selectedRegisterName?: string;
     netTotal: number;
+    reconciliationMode: boolean;
+    reconciliationTotal: number;
     formatCurrency: (amount: number) => string;
 };
 
@@ -11,8 +13,16 @@ export default function EntriesHeader({
     entryCount,
     selectedRegisterName,
     netTotal,
+    reconciliationMode,
+    reconciliationTotal,
     formatCurrency,
 }: EntriesHeaderProps) {
+    const summaryValue = reconciliationMode ? reconciliationTotal : netTotal;
+    const summaryLabel = reconciliationMode ? "Reconciliation Total" : "Net Total";
+    const summaryTrend = reconciliationMode
+        ? "Starts at 0 and increases as entries are reconciled"
+        : (netTotal >= 0 ? "▲ surplus" : "▼ deficit");
+
     return (
         <div style={{ marginBottom: "1.5rem", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
             <div>
@@ -36,19 +46,19 @@ export default function EntriesHeader({
                     fontSize: "0.7rem", fontWeight: 600, color: sg.textMuted,
                     fontFamily: sg.font, textTransform: "uppercase", letterSpacing: "0.08em",
                 }}>
-                    Net Total
+                    {summaryLabel}
                 </span>
                 <span style={{
                     fontSize: "2rem", fontWeight: 700, fontFamily: sg.font,
-                    color: netTotal >= 0 ? sg.success : sg.error, lineHeight: 1,
+                    color: summaryValue >= 0 ? sg.success : sg.error, lineHeight: 1,
                 }}>
-                    {formatCurrency(Math.abs(netTotal))}
+                    {formatCurrency(Math.abs(summaryValue))}
                 </span>
                 <span style={{
                     fontSize: "0.7rem", fontWeight: 400, fontFamily: sg.font,
-                    color: netTotal >= 0 ? sg.success : sg.error, opacity: 0.75,
+                    color: summaryValue >= 0 ? sg.success : sg.error, opacity: 0.75,
                 }}>
-                    {netTotal >= 0 ? "▲ surplus" : "▼ deficit"}
+                    {summaryTrend}
                 </span>
             </div>
         </div>

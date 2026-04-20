@@ -200,7 +200,7 @@ export default function EntryFormPanel({
 
                 <div style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr 80px 80px",
+                    gridTemplateColumns: "1fr 1fr 1fr",
                     gap: "0.85rem",
                     marginBottom: "1.1rem",
                     alignItems: "start",
@@ -259,19 +259,16 @@ export default function EntryFormPanel({
 
                     <div>
                         <label style={labelStyle}>Reconciled</label>
-                        <div style={{ display: "flex", alignItems: "center", height: "30px" }}>
-                            <input
-                                type="checkbox"
-                                id="rec-check"
-                                style={{ accentColor: sg.brandHover, width: "16px", height: "16px", cursor: "pointer" }}
-                                {...register("Rec")}
-                            />
-                            <label
-                                htmlFor="rec-check"
-                                style={{ marginLeft: "0.4rem", fontSize: "0.8rem", color: sg.textSecondary, fontFamily: sg.font, cursor: "pointer" }}
-                            >
-                                Yes
-                            </label>
+                        <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            height: "30px",
+                            fontSize: "0.75rem",
+                            color: sg.textMuted,
+                            fontFamily: sg.font,
+                            fontStyle: "italic",
+                        }}>
+                            null (future mode)
                         </div>
                     </div>
                 </div>

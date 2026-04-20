@@ -164,6 +164,64 @@ export async function POST(request: Request) {
     }
 }
 
+export async function PATCH(request: Request) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user?.email) {
+            return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
+        }
+
+        const singleUpdateSchema = z.object({
+            EntryID: z.number(),
+            Rec: z.boolean(),
+        });
+        const bulkUpdateSchema = z.object({
+            updates: z.array(singleUpdateSchema).min(1),
+        });
+
+        const payload = await request.json();
+        const updates = "updates" in payload
+            ? bulkUpdateSchema.parse(payload).updates
+            : [singleUpdateSchema.parse(payload)];
+
+        // Keep only the latest value per entry ID if duplicates are submitted.
+        const updatesByEntry = new Map<number, boolean>();
+        updates.forEach(update => {
+            updatesByEntry.set(update.EntryID, update.Rec);
+        });
+        const uniqueUpdates = Array.from(updatesByEntry.entries()).map(([EntryID, Rec]) => ({ EntryID, Rec }));
+        const entryIDs = uniqueUpdates.map(update => update.EntryID);
+
+        const placeholders = entryIDs.map(() => "?").join(", ");
+
+        const [allowedRows] = await connection.execute<RowDataPacket[]>(
+            `SELECT Entry.ID
+             FROM Entry
+             JOIN Register ON Register.ID = Entry.RegisterID
+             JOIN User ON (User.SchoolID = Register.SchoolID OR User.AccountType = 'Dev')
+             WHERE User.Email = ? AND Entry.ID IN (${placeholders})`,
+            [session.user.email, ...entryIDs]
+        );
+
+        if (allowedRows.length !== entryIDs.length) {
+            return NextResponse.json({ error: "Access Denied" }, { status: 403 });
+        }
+
+        for (const update of uniqueUpdates) {
+            await connection.execute<ResultSetHeader>(
+                "UPDATE Entry SET Rec = ? WHERE ID = ?",
+                [update.Rec ? 1 : 0, update.EntryID]
+            );
+        }
+
+        return NextResponse.json({ success: true, updates: uniqueUpdates });
+    }
+    catch (err) {
+        console.log(err);
+        return NextResponse.json({ error: "Failed to update reconciliation." }, { status: 500 });
+    }
+}
+
 export async function DEL(request: Request) {
     try{
         const session = await getServerSession(authOptions);
