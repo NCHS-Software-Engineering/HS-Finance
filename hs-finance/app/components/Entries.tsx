@@ -18,7 +18,7 @@ export default function Entries() {
     const [registers, setRegisters] = useState<Register[]>([]);
     const [classes, setClasses] = useState<Class[]>([]);
     const [accounts, setAccounts] = useState<Account[]>([]);
-    const [selectedRegisterID, setSelectedRegisterID] = useState<string>("");
+    const [selectedRegisterID, setSelectedRegisterID] = useState<string>("all");
     const [loading, setLoading] = useState(true);
     const [expandedEntries, setExpandedEntries] = useState<Set<number>>(new Set());
     const [showForm, setShowForm] = useState(false);
@@ -88,10 +88,6 @@ export default function Entries() {
                 const registerList: Register[] = Array.isArray(registersData) ? registersData : registersData.registers ?? [];
                 setRegisters(registerList);
 
-                if (registerList.length > 0) {
-                    setSelectedRegisterID(String(registerList[0].ID));
-                }
-
                 const classesData = await classesRes.json();
                 setClasses(Array.isArray(classesData) ? classesData : classesData.classes ?? []);
 
@@ -112,9 +108,9 @@ export default function Entries() {
         fetchData();
     }, []);
 
-    const filteredEntries = selectedRegisterID
-        ? entries.filter(e => String(e.RegisterID) === selectedRegisterID)
-        : entries;
+    const filteredEntries = selectedRegisterID === "all"
+        ? entries
+        : entries.filter(e => String(e.RegisterID) === selectedRegisterID);
 
     const onSubmit = async (data: EntryFormData) => {
         setIsSubmitting(true);
@@ -419,7 +415,7 @@ export default function Entries() {
         );
     }
 
-    const selectedRegister = registers.find(r => String(r.ID) === selectedRegisterID);
+    const selectedRegister = selectedRegisterID === "all" ? undefined : registers.find(r => String(r.ID) === selectedRegisterID);
 
     return (
         <div style={{ backgroundColor: sg.bgPage, minHeight: "100vh", padding: "2rem", fontFamily: sg.font }}>

@@ -64,14 +64,22 @@ export default function EntriesToolbar({
                         minWidth: "180px",
                     }}
                 >
-                    {registers.length === 0 && (
-                        <option value="">No registers found</option>
-                    )}
-                    {registers.map(r => (
-                        <option key={r.ID} value={String(r.ID)}>
-                            {r.RegisterName}
-                        </option>
-                    ))}
+                    <option 
+                        value="all" 
+                        style={{ 
+                            fontWeight: 'bold', 
+                            backgroundColor: '#f0f0f0', // Light grey background
+                            color: '#007bff'           // Distinct blue text
+                        }}
+                    >All Entries</option>
+                {registers.length === 0 && (
+                    <option value="">No registers found</option>
+                )}
+                {registers.map(r => (
+                    <option key={r.ID} value={String(r.ID)}>
+                        {r.RegisterName}
+                    </option>
+                ))}
                 </select>
             </div>
 
