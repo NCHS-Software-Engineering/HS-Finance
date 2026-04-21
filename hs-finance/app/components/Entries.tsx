@@ -40,6 +40,16 @@ export default function Entries() {
         },
     });
 
+    const refreshEntries = async () => {
+        try {
+            const res = await fetch("/api/entries");
+            const entriesData = await res.json();
+            setEntries(Array.isArray(entriesData) ? entriesData : entriesData.entries ?? []);
+        } catch (error) {
+            console.error("Error refreshing entries:", error);
+        }
+    };
+
     useEffect(() => {
         async function fetchData() {
             try {
@@ -121,10 +131,12 @@ export default function Entries() {
 
             if (!res.ok) throw new Error(`Server responded with ${res.status}`);
 
-            const newEntry: Entry = await res.json();
-            setEntries(prev => [newEntry, ...prev]);
+            await res.json();
             setSubmitSuccess(true);
             reset();
+
+            // Refresh entries to show the new entry in the table
+            await refreshEntries();
 
             setTimeout(() => {
                 setShowForm(false);
