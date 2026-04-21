@@ -320,22 +320,23 @@ export default function Entries() {
 
     return (
         <div style={{ backgroundColor: sg.bgPage, minHeight: "100vh", padding: "2rem", fontFamily: sg.font }}>
-            <EntriesHeader
-                entryCount={filteredEntries.length}
-                selectedRegisterName={selectedRegister?.RegisterName}
-                netTotal={netTotal}
-                reconciliationMode={reconciliationMode}
-                reconciliationTotal={reconciliationTotal}
-                formatCurrency={formatCurrency}
-            />
+            <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+                <EntriesHeader
+                    entryCount={filteredEntries.length}
+                    selectedRegisterName={selectedRegister?.RegisterName}
+                    netTotal={netTotal}
+                    reconciliationMode={reconciliationMode}
+                    reconciliationTotal={reconciliationTotal}
+                    formatCurrency={formatCurrency}
+                />
 
-            <div style={{
-                backgroundColor: sg.bgPanel,
-                border: `1px solid ${sg.border}`,
-                borderRadius: "8px",
-                overflow: "hidden",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-            }}>
+                <div style={{
+                    backgroundColor: sg.bgPanel,
+                    border: `1px solid ${sg.border}`,
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                }}>
 
                 <EntriesToolbar
                     registers={registers}
@@ -370,22 +371,23 @@ export default function Entries() {
                     />
                 )}
 
-                <EntriesTable
-                    entries={filteredEntries}
-                    expandedEntries={expandedEntries}
-                    onToggleExpanded={toggleExpanded}
-                    transactions={transactions}
-                    getFundsForEntry={getFundsForEntry}
-                    getDepositPayment={getDepositPayment}
-                    getEntrySignedTotal={getEntrySignedTotal}
-                    formatDate={formatDate}
-                    formatCurrency={formatCurrency}
-                    selectedRegisterID={selectedRegisterID}
-                    reconciliationMode={reconciliationMode}
-                    isSavingReconciliation={isSavingReconciliation}
-                    getEntryRecValue={getEntryRecValue}
-                    onToggleReconciled={handleToggleReconciled}
-                />
+                    <EntriesTable
+                        entries={filteredEntries}
+                        expandedEntries={expandedEntries}
+                        onToggleExpanded={toggleExpanded}
+                        transactions={transactions}
+                        getFundsForEntry={getFundsForEntry}
+                        getDepositPayment={getDepositPayment}
+                        getEntrySignedTotal={getEntrySignedTotal}
+                        formatDate={formatDate}
+                        formatCurrency={formatCurrency}
+                        selectedRegisterID={selectedRegisterID}
+                        reconciliationMode={reconciliationMode}
+                        isSavingReconciliation={isSavingReconciliation}
+                        getEntryRecValue={getEntryRecValue}
+                        onToggleReconciled={handleToggleReconciled}
+                    />
+                </div>
             </div>
         </div>
     );
