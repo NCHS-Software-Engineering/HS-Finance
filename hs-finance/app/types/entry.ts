@@ -9,5 +9,6 @@
     Void: boolean;
     Rec: boolean;
     EntryType: string;
+    ClassID?: number;
     FundIDs: number[];
 };

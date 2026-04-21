@@ -8,6 +8,7 @@ import type { EntryFormData } from "./entries/types";
 import EntriesHeader from "./entries/EntriesHeader";
 import EntriesToolbar from "./entries/EntriesToolbar";
 import EntryFormPanel from "./entries/EntryFormPanel";
+import EditEntryFormPanel from "./entries/EditEntryFormPanel";
 import EntriesTable from "./entries/EntriesTable";
 
 export default function Entries() {
@@ -28,6 +29,10 @@ export default function Entries() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [submitSuccess, setSubmitSuccess] = useState(false);
+    const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
+    const [editingFunds, setEditingFunds] = useState<Fund[]>([]);
+    const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+    const [editSubmitError, setEditSubmitError] = useState<string | null>(null);
 
     const {
         register,
@@ -42,9 +47,17 @@ export default function Entries() {
 
     const refreshEntries = async () => {
         try {
-            const res = await fetch("/api/entries");
-            const entriesData = await res.json();
+            const [entriesRes, fundsRes] = await Promise.all([
+                fetch("/api/entries"),
+                fetch("/api/funds"),
+            ]);
+            const entriesData = await entriesRes.json();
             setEntries(Array.isArray(entriesData) ? entriesData : entriesData.entries ?? []);
+
+            const fundsData = await fundsRes.json();
+            setFunds(Array.isArray(fundsData) ? fundsData : fundsData.funds ?? []);
+
+            console.log("refreshEntries completed, new entries:", entriesData, "new funds:", fundsData);
         } catch (error) {
             console.error("Error refreshing entries:", error);
         }
@@ -108,13 +121,17 @@ export default function Entries() {
         setSubmitError(null);
         setSubmitSuccess(false);
 
+        // Convert ISO date to YYYY-MM-DD format
+        const dateObj = new Date(data.Date);
+        const formattedDate = dateObj.toISOString().split('T')[0];
+
         // Build payload that exactly matches POST schema
         const payload = {
             TransactionID: data.TransactionID,
             Location:      data.Location,
             AccountID:     data.AccountID,          // ← new field
             Memo:          data.Memo,
-            Date:          data.Date,
+            Date:          formattedDate,
             RegisterID:    Number(selectedRegisterID), // ← injected, not from form
             Void:          data.Void ? 1 : 0,       // ← boolean → number
             Rec:           0,                       // Reserved for future reconciliation mode
@@ -264,6 +281,92 @@ export default function Entries() {
         });
     };
 
+    const handleEditEntry = (entry: Entry) => {
+        setEditingEntry(entry);
+        setEditingFunds(getFundsForEntry(entry.ID));
+        setShowForm(false);
+        setEditSubmitError(null);
+    };
+
+    const handleEditSubmit = async (data: EntryFormData, updatedFunds: Fund[]) => {
+        console.log("handleEditSubmit called with data:", data, "funds:", updatedFunds);
+        if (!editingEntry) return;
+        setIsEditSubmitting(true);
+        setEditSubmitError(null);
+
+        // Convert ISO date to YYYY-MM-DD format
+        const dateObj = new Date(data.Date);
+        const formattedDate = dateObj.toISOString().split('T')[0];
+
+        const payload = {
+            EntryID: editingEntry.ID,
+            TransactionID: data.TransactionID,
+            Location: data.Location,
+            AccountID: data.AccountID,
+            Memo: data.Memo,
+            Date: formattedDate,
+            Void: data.Void ? 1 : 0,
+            EntryType: data.EntryType,
+            ClassID: data.ClassID,
+            funds: updatedFunds.map(f => ({
+                Target: f.Target,
+                Description: f.Description,
+                PaymentMethod: f.PaymentMethod,
+                ReferenceNumber: f.ReferenceNumber,
+                Amount: f.Amount,
+            })),
+        };
+
+        try {
+            const res = await fetch("/api/entries", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            console.log("PUT response status:", res.status);
+            console.log("Payload sent:", payload);
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                console.error("Server error response:", errorData);
+                throw new Error(`Server responded with ${res.status}: ${errorData.error || 'Unknown error'}`);
+            }
+
+            await refreshEntries();
+            setEditingEntry(null);
+            setEditingFunds([]);
+        } catch (err) {
+            console.error("Edit submission error:", err);
+            setEditSubmitError(err instanceof Error ? err.message : "Failed to update entry.");
+        } finally {
+            setIsEditSubmitting(false);
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setEditingEntry(null);
+        setEditingFunds([]);
+        setEditSubmitError(null);
+    };
+
+    const handleDeleteEntry = async (entryID: number) => {
+        try {
+            const res = await fetch("/api/entries", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ EntryID: entryID }),
+            });
+
+            if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+
+            await refreshEntries();
+        } catch (err) {
+            console.error("Error deleting entry:", err);
+            alert("Failed to delete entry: " + (err instanceof Error ? err.message : "Unknown error"));
+        }
+    };
+
     const formatDate = (date: Date | string) => {
         try {
             return new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
@@ -371,6 +474,29 @@ export default function Entries() {
                     />
                 )}
 
+                {editingEntry && !reconciliationMode && (
+                    <EditEntryFormPanel
+                        entryID={editingEntry.ID}
+                        accounts={accounts}
+                        classes={classes}
+                        defaultValues={{
+                            TransactionID: editingEntry.TransactionID,
+                            Location: editingEntry.Location,
+                            AccountID: editingEntry.AccountID,
+                            Memo: editingEntry.Memo,
+                            Date: editingEntry.Date,
+                            Void: !!editingEntry.Void,
+                            EntryType: editingEntry.EntryType,
+                            ClassID: editingEntry.ClassID || 0,
+                        }}
+                        defaultFunds={editingFunds}
+                        onSubmit={handleEditSubmit}
+                        onCancel={handleCancelEdit}
+                        isSubmitting={isEditSubmitting}
+                        submitError={editSubmitError}
+                    />
+                )}
+
                     <EntriesTable
                         entries={filteredEntries}
                         expandedEntries={expandedEntries}
@@ -386,6 +512,8 @@ export default function Entries() {
                         isSavingReconciliation={isSavingReconciliation}
                         getEntryRecValue={getEntryRecValue}
                         onToggleReconciled={handleToggleReconciled}
+                        onEdit={handleEditEntry}
+                        onDelete={handleDeleteEntry}
                     />
                 </div>
             </div>

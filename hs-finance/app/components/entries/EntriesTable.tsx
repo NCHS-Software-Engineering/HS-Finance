@@ -22,6 +22,8 @@ type EntriesTableProps = {
     isSavingReconciliation: boolean;
     getEntryRecValue: (entry: Entry) => boolean;
     onToggleReconciled: (entryID: number, nextRecValue: boolean) => void;
+    onEdit?: (entry: Entry) => void;
+    onDelete?: (entryID: number) => void;
 };
 
 const cellStyle: CSSProperties = {
@@ -51,6 +53,8 @@ export default function EntriesTable({
     isSavingReconciliation,
     getEntryRecValue,
     onToggleReconciled,
+    onEdit,
+    onDelete,
 }: EntriesTableProps) {
     return (
         <>
@@ -78,6 +82,7 @@ export default function EntriesTable({
                 <div style={cellStyle}>Deposit</div>
                 <div style={cellStyle}>Payment</div>
                 <div style={cellStyle}>Type</div>
+                <div style={cellStyle}>Actions</div>
             </div>
 
             {entries.length === 0 && (
@@ -169,6 +174,54 @@ export default function EntriesTable({
                                 {payment !== null ? formatCurrency(payment) : ""}
                             </div>
                             <div style={cellStyle}>{entry.EntryType}</div>
+                            <div style={{ ...cellStyle, display: "flex", gap: "0.4rem", justifyContent: "center" }}>
+                                {!reconciliationMode && (
+                                    <>
+                                        <button
+                                            onClick={e => {
+                                                e.stopPropagation();
+                                                onEdit?.(entry);
+                                            }}
+                                            title="Edit this entry"
+                                            style={{
+                                                padding: "0.25rem 0.6rem",
+                                                backgroundColor: sg.brand,
+                                                color: sg.textPrimary,
+                                                border: "none",
+                                                borderRadius: "3px",
+                                                fontSize: "0.7rem",
+                                                fontWeight: 600,
+                                                cursor: "pointer",
+                                                fontFamily: sg.font,
+                                            }}
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={e => {
+                                                e.stopPropagation();
+                                                if (window.confirm("Are you sure you want to delete this entry? This action cannot be undone.")) {
+                                                    onDelete?.(entry.ID);
+                                                }
+                                            }}
+                                            title="Delete this entry"
+                                            style={{
+                                                padding: "0.25rem 0.6rem",
+                                                backgroundColor: sg.error,
+                                                color: "#fff",
+                                                border: "none",
+                                                borderRadius: "3px",
+                                                fontSize: "0.7rem",
+                                                fontWeight: 600,
+                                                cursor: "pointer",
+                                                fontFamily: sg.font,
+                                            }}
+                                        >
+                                            Delete
+                                        </button>
+                                    </>
+                                )}
+                            </div>
                         </div>
 
                         {isExpanded && (
