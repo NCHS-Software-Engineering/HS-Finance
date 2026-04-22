@@ -24,13 +24,13 @@ export function Navbar() {
           <div className="flex items-center gap-8 text-sm">
             
             {/* Navigation Links */}
-            <Link href="/" className="text-[#F87171] hover:text-[#ffffff] hover:underline underline-offset-4">
+            <Link href="/" className="cursor-pointer text-[#F87171] hover:text-[#ffffff] hover:underline underline-offset-4">
               Home
             </Link>
-            <Link href="/transactions" className="text-[#F87171] hover:text-[#ffffff] hover:underline underline-offset-4">
+            <Link href="/transactions" className="cursor-pointer text-[#F87171] hover:text-[#ffffff] hover:underline underline-offset-4">
               Transactions
             </Link>
-            <Link href="/settings" className="text-[#F87171] hover:text-[#ffffff] hover:underline underline-offset-4">
+            <Link href="/settings" className="cursor-pointer text-[#F87171] hover:text-[#ffffff] hover:underline underline-offset-4">
               Settings
             </Link>
 
@@ -41,7 +41,7 @@ export function Navbar() {
                 {/* Profile button — shows Google profile picture instead of text */}
                 <button
                   onClick={() => setMenuOpen(!menuOpen)}
-                  className="rounded-full border-2 border-[#F87171] overflow-hidden w-8 h-8 hover:opacity-80"
+                  className="cursor-pointer rounded-full border-2 border-[#F87171] overflow-hidden w-8 h-8 hover:opacity-80"
                 >
                   {session.user?.image ? (
                     // If Google gave us a profile picture, show it
@@ -98,7 +98,7 @@ export function Navbar() {
                     <Link
                       href="/settings"
                       onClick={() => setMenuOpen(false)}
-                      className="block w-full px-4 py-2 text-left text-sm text-[#4B5563] hover:bg-[#F3F4F6]"
+                      className="cursor-pointer block w-full px-4 py-2 text-left text-sm text-[#4B5563] hover:bg-[#F3F4F6]"
                     >
                       Account
                     </Link>
@@ -109,7 +109,7 @@ export function Navbar() {
                         setMenuOpen(false);
                         signOut();
                       }}
-                      className="block w-full px-4 py-2 text-left text-sm text-[#B91C1C] hover:bg-[#F3F4F6]"
+                      className="cursor-pointer block w-full px-4 py-2 text-left text-sm text-[#B91C1C] hover:bg-[#F3F4F6]"
                     >
                       Sign Out
                     </button>
@@ -121,7 +121,7 @@ export function Navbar() {
               // NOT LOGGED IN — show Sign In button
               <button
                 onClick={() => signIn()}
-                className="rounded-md border border-[#F87171] px-3 py-1 text-[#D1D5DB] hover:bg-[#F87171]"
+                className="cursor-pointer rounded-md border border-[#F87171] px-3 py-1 text-[#D1D5DB] hover:bg-[#F87171]"
               >
                 Sign In
               </button>
