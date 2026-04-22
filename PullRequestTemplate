@@ -1,0 +1,63 @@
+ What did you change?
+Describe what you added or fixed in this PR.
+
+---
+
+## What is the user trying to do?
+Answer from the user's point of view.
+
+- Who is the user?
+- What task are they trying to complete?
+
+---
+
+## Show your work (Required if UI changed)
+Add screenshots or a short screen recording.
+
+- Desktop view:
+- Mobile or small screen view:
+
+---
+
+## Next.js Basics Check
+- [ ] Pages or routes load correctly
+- [ ] Navigation uses `<Link>` (not regular `<a>` tags for internal links)
+- [ ] Page does not fully reload when navigating
+- [ ] No red errors in the browser console
+- [ ] No hydration warnings
+
+---
+
+## Loading, Error, and Empty States
+- [ ] The user sees something while data is loading
+- [ ] Errors show a helpful message (not just “error”)
+- [ ] Empty screens explain what’s going on
+- [ ] The app never shows a blank screen
+
+---
+
+## Accessibility & Usability
+- [ ] I can use this feature with the keyboard only
+- [ ] Buttons and links clearly say what they do
+- [ ] Text is readable and high contrast
+- [ ] Form fields have labels and helpful messages
+- [ ] Focus is visible when tabbing
+
+---
+
+## Responsive Design
+- [ ] Works on a small screen (phone size)
+- [ ] No horizontal scrolling
+- [ ] Buttons are easy to tap on mobile
+
+---
+
+## Final Self-Check
+- [ ] I tested this like a real user
+- [ ] I tested at least one thing going wrong
+- [ ] I would understand this without explanation
+
+---
+
+## Questions or Notes for the Reviewer
+Anything you’re unsure about?
