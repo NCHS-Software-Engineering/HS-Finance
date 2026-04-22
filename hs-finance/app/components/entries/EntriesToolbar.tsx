@@ -22,6 +22,8 @@ export default function EntriesToolbar({
     isSavingReconciliation,
     onToggleReconciliationMode,
 }: EntriesToolbarProps) {
+    const canAddEntry = selectedRegisterID !== "all";
+
     return (
         <div style={{
             display: "flex",
@@ -88,6 +90,9 @@ export default function EntriesToolbar({
                     onClick={onToggleReconciliationMode}
                     disabled={isSavingReconciliation}
                     style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.4rem",
                         padding: "0.45rem 0.9rem",
                         backgroundColor: reconciliationMode ? sg.successBg : "transparent",
                         color: reconciliationMode ? sg.success : sg.textSecondary,
@@ -100,39 +105,69 @@ export default function EntriesToolbar({
                         cursor: isSavingReconciliation ? "not-allowed" : "pointer",
                     }}
                 >
+                    {isSavingReconciliation && (
+                        <svg width="12" height="12" viewBox="0 0 50 50" aria-hidden="true">
+                            <circle
+                                cx="25"
+                                cy="25"
+                                r="20"
+                                fill="none"
+                                stroke="rgba(22,101,52,0.25)"
+                                strokeWidth="6"
+                            />
+                            <path
+                                d="M25 5a20 20 0 0 1 20 20"
+                                fill="none"
+                                stroke={sg.success}
+                                strokeWidth="6"
+                                strokeLinecap="round"
+                            >
+                                <animateTransform
+                                    attributeName="transform"
+                                    type="rotate"
+                                    from="0 25 25"
+                                    to="360 25 25"
+                                    dur="0.8s"
+                                    repeatCount="indefinite"
+                                />
+                            </path>
+                        </svg>
+                    )}
                     {isSavingReconciliation
                         ? "Saving Reconciliation..."
                         : (reconciliationMode ? "Save + Exit Reconciliation" : "Enter Reconciliation Mode")}
                 </button>
 
-                <button
-                    onClick={onToggleForm}
-                    disabled={reconciliationMode || isSavingReconciliation}
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.4rem",
-                        padding: "0.45rem 0.9rem",
-                        backgroundColor: (reconciliationMode || isSavingReconciliation) ? sg.disabledBtn : (showForm ? sg.secondary : sg.brand),
-                        color: (reconciliationMode || isSavingReconciliation) ? sg.disabled : sg.textPrimary,
-                        border: "none",
-                        borderRadius: "5px",
-                        fontFamily: sg.font,
-                        fontSize: "0.78rem",
-                        fontWeight: 600,
-                        cursor: (reconciliationMode || isSavingReconciliation) ? "not-allowed" : "pointer",
-                        transition: "background-color 0.15s ease",
-                    }}
-                    onMouseEnter={e => {
-                        if (!reconciliationMode && !isSavingReconciliation) e.currentTarget.style.backgroundColor = sg.brandHover;
-                    }}
-                    onMouseLeave={e => {
-                        if (!reconciliationMode && !isSavingReconciliation) e.currentTarget.style.backgroundColor = showForm ? sg.secondary : sg.brand;
-                    }}
-                >
-                    <span style={{ fontSize: "1rem", lineHeight: 1 }}>{showForm ? "✕" : "+"}</span>
-                    {showForm ? "Cancel" : "Add Entry"}
-                </button>
+                {canAddEntry && (
+                    <button
+                        onClick={onToggleForm}
+                        disabled={reconciliationMode || isSavingReconciliation}
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.4rem",
+                            padding: "0.45rem 0.9rem",
+                            backgroundColor: (reconciliationMode || isSavingReconciliation) ? sg.disabledBtn : (showForm ? sg.secondary : sg.brand),
+                            color: (reconciliationMode || isSavingReconciliation) ? sg.disabled : sg.textPrimary,
+                            border: "none",
+                            borderRadius: "5px",
+                            fontFamily: sg.font,
+                            fontSize: "0.78rem",
+                            fontWeight: 600,
+                            cursor: (reconciliationMode || isSavingReconciliation) ? "not-allowed" : "pointer",
+                            transition: "background-color 0.15s ease",
+                        }}
+                        onMouseEnter={e => {
+                            if (!reconciliationMode && !isSavingReconciliation) e.currentTarget.style.backgroundColor = sg.brandHover;
+                        }}
+                        onMouseLeave={e => {
+                            if (!reconciliationMode && !isSavingReconciliation) e.currentTarget.style.backgroundColor = showForm ? sg.secondary : sg.brand;
+                        }}
+                    >
+                        <span style={{ fontSize: "1rem", lineHeight: 1 }}>{showForm ? "✕" : "+"}</span>
+                        {showForm ? "Cancel" : "Add Entry"}
+                    </button>
+                )}
             </div>
         </div>
     );

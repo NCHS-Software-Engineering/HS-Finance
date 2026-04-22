@@ -160,6 +160,12 @@ export async function POST(request: Request) {
     }
     catch (err) {
         console.log(err);
+        if (err instanceof z.ZodError) {
+            return NextResponse.json({
+                error: "Invalid entry data",
+                details: err.flatten(),
+            }, { status: 400 });
+        }
         return NextResponse.json({error: "Failed to add entry"}, {status: 500});
     }
 }

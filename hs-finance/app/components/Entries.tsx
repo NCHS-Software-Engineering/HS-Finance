@@ -33,6 +33,7 @@ export default function Entries() {
     const [editingFunds, setEditingFunds] = useState<Fund[]>([]);
     const [isEditSubmitting, setIsEditSubmitting] = useState(false);
     const [editSubmitError, setEditSubmitError] = useState<string | null>(null);
+    const [deletingEntryID, setDeletingEntryID] = useState<number | null>(null);
 
     const {
         register,
@@ -117,6 +118,12 @@ export default function Entries() {
         setSubmitError(null);
         setSubmitSuccess(false);
 
+        if (!selectedRegister || selectedRegisterID === "all") {
+            setSubmitError("Select a register before creating an entry.");
+            setIsSubmitting(false);
+            return;
+        }
+
         // Convert ISO date to YYYY-MM-DD format
         const dateObj = new Date(data.Date);
         const formattedDate = dateObj.toISOString().split('T')[0];
@@ -128,7 +135,7 @@ export default function Entries() {
             AccountID:     data.AccountID,          // ← new field
             Memo:          data.Memo,
             Date:          formattedDate,
-            RegisterID:    Number(selectedRegisterID), // ← injected, not from form
+            RegisterID:    selectedRegister.ID,
             Void:          data.Void ? 1 : 0,       // ← boolean → number
             Rec:           0,                       // Reserved for future reconciliation mode
             EntryType:     data.EntryType,
@@ -347,6 +354,7 @@ export default function Entries() {
     };
 
     const handleDeleteEntry = async (entryID: number) => {
+        setDeletingEntryID(entryID);
         try {
             const res = await fetch("/api/entries", {
                 method: "DELETE",
@@ -360,6 +368,8 @@ export default function Entries() {
         } catch (err) {
             console.error("Error deleting entry:", err);
             alert("Failed to delete entry: " + (err instanceof Error ? err.message : "Unknown error"));
+        } finally {
+            setDeletingEntryID(null);
         }
     };
 
@@ -442,6 +452,9 @@ export default function Entries() {
                     selectedRegisterID={selectedRegisterID}
                     onSelectRegister={registerID => {
                         setSelectedRegisterID(registerID);
+                        if (registerID === "all") {
+                            setShowForm(false);
+                        }
                         setExpandedEntries(new Set());
                     }}
                     showForm={showForm}
@@ -454,7 +467,7 @@ export default function Entries() {
                     onToggleReconciliationMode={handleToggleReconciliationMode}
                 />
 
-                {showForm && !reconciliationMode && (
+                {showForm && !reconciliationMode && selectedRegisterID !== "all" && (
                     <EntryFormPanel
                         selectedRegister={selectedRegister}
                         accounts={accounts}
@@ -510,6 +523,7 @@ export default function Entries() {
                         onToggleReconciled={handleToggleReconciled}
                         onEdit={handleEditEntry}
                         onDelete={handleDeleteEntry}
+                        deletingEntryID={deletingEntryID}
                     />
                 </div>
             </div>

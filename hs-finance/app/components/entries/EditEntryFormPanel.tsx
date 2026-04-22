@@ -302,6 +302,9 @@ export default function EditEntryFormPanel({
                         type="submit"
                         disabled={isSubmitting}
                         style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.4rem",
                             padding: "0.45rem 1.1rem",
                             backgroundColor: isSubmitting ? sg.disabledBtn : sg.brand,
                             color: isSubmitting ? sg.disabled : sg.textPrimary,
@@ -314,6 +317,34 @@ export default function EditEntryFormPanel({
                             transition: "background-color 0.15s ease",
                         }}
                     >
+                        {isSubmitting && (
+                            <svg width="12" height="12" viewBox="0 0 50 50" aria-hidden="true">
+                                <circle
+                                    cx="25"
+                                    cy="25"
+                                    r="20"
+                                    fill="none"
+                                    stroke="rgba(255,255,255,0.25)"
+                                    strokeWidth="6"
+                                />
+                                <path
+                                    d="M25 5a20 20 0 0 1 20 20"
+                                    fill="none"
+                                    stroke="#fff"
+                                    strokeWidth="6"
+                                    strokeLinecap="round"
+                                >
+                                    <animateTransform
+                                        attributeName="transform"
+                                        type="rotate"
+                                        from="0 25 25"
+                                        to="360 25 25"
+                                        dur="0.8s"
+                                        repeatCount="indefinite"
+                                    />
+                                </path>
+                            </svg>
+                        )}
                         {isSubmitting ? "Saving..." : "Save Changes"}
                     </button>
                 </div>
