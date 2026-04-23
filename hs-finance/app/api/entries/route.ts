@@ -32,14 +32,14 @@ export async function GET(request: Request) {
         const location = searchParams.get("location");
         const classID = searchParams.get("classID");
 
-        let query = 
-        `SELECT 
-            Entry.ID, Entry.TransactionID,Entry.AccountID, Entry.Location, Entry.Memo, Entry.Date, Entry.RegisterID, Entry.Void, Entry.Rec, Entry.EntryType
+        let query =
+        `SELECT
+            Entry.ID, Entry.TransactionID, Entry.AccountID, Entry.Location, Entry.Memo, Entry.Date, Entry.RegisterID, Entry.Void, Entry.Rec, Entry.EntryType, Entry.ClassID
             FROM Entry
             JOIN Register ON Register.ID = Entry.RegisterID
             JOIN User ON (User.SchoolID = Register.SchoolID OR User.AccountType = 'Dev')
             JOIN Transaction ON Entry.TransactionID = Transaction.ID
-            WHERE User.Email = ? 
+            WHERE User.Email = ?
             AND (User.SchoolID = Register.SchoolID OR User.AccountType = 'Dev')
             AND Register.ID = Entry.RegisterID`;
         const userEmail = session.user.email;
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
             params.push(rec === "true" ? "1" : "0");
         }
         if (voided !== null) {
-            query += ` AND Entry.Rec = ?`;
+            query += ` AND Entry.Void = ?`;
             params.push(voided === "true" ? "1" : "0");
         }
 
@@ -151,8 +151,8 @@ export async function POST(request: Request) {
         }
 
         const [entryResult] = await connection.execute<ResultSetHeader>(
-            "INSERT INTO Entry (TransactionID, Location, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID) VALUES (?, ?,?, ?, ?, ?, ?, ?, ?, ?)",
-            [TransactionID, Location,AccountID, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID]
+            "INSERT INTO Entry (TransactionID, Location, AccountID, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [TransactionID, Location, AccountID, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID]
         );
         const entryID = entryResult.insertId;
         return NextResponse.json({ success: true, entryID });
@@ -160,17 +160,160 @@ export async function POST(request: Request) {
     }
     catch (err) {
         console.log(err);
+        if (err instanceof z.ZodError) {
+            return NextResponse.json({
+                error: "Invalid entry data",
+                details: err.flatten(),
+            }, { status: 400 });
+        }
         return NextResponse.json({error: "Failed to add entry"}, {status: 500});
     }
 }
 
-export async function DEL(request: Request) {
+export async function PATCH(request: Request) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user?.email) {
+            return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
+        }
+
+        const singleUpdateSchema = z.object({
+            EntryID: z.number(),
+            Rec: z.boolean(),
+        });
+        const bulkUpdateSchema = z.object({
+            updates: z.array(singleUpdateSchema).min(1),
+        });
+
+        const payload = await request.json();
+        const updates = "updates" in payload
+            ? bulkUpdateSchema.parse(payload).updates
+            : [singleUpdateSchema.parse(payload)];
+
+        // Keep only the latest value per entry ID if duplicates are submitted.
+        const updatesByEntry = new Map<number, boolean>();
+        updates.forEach(update => {
+            updatesByEntry.set(update.EntryID, update.Rec);
+        });
+        const uniqueUpdates = Array.from(updatesByEntry.entries()).map(([EntryID, Rec]) => ({ EntryID, Rec }));
+        const entryIDs = uniqueUpdates.map(update => update.EntryID);
+
+        const placeholders = entryIDs.map(() => "?").join(", ");
+
+        const [allowedRows] = await connection.execute<RowDataPacket[]>(
+            `SELECT Entry.ID
+             FROM Entry
+             JOIN Register ON Register.ID = Entry.RegisterID
+             JOIN User ON (User.SchoolID = Register.SchoolID OR User.AccountType = 'Dev')
+             WHERE User.Email = ? AND Entry.ID IN (${placeholders})`,
+            [session.user.email, ...entryIDs]
+        );
+
+        if (allowedRows.length !== entryIDs.length) {
+            return NextResponse.json({ error: "Access Denied" }, { status: 403 });
+        }
+
+        for (const update of uniqueUpdates) {
+            await connection.execute<ResultSetHeader>(
+                "UPDATE Entry SET Rec = ? WHERE ID = ?",
+                [update.Rec ? 1 : 0, update.EntryID]
+            );
+        }
+
+        return NextResponse.json({ success: true, updates: uniqueUpdates });
+    }
+    catch (err) {
+        console.log(err);
+        return NextResponse.json({ error: "Failed to update reconciliation." }, { status: 500 });
+    }
+}
+
+export async function PUT(request: Request) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user?.email) {
+            return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
+        }
+
+        const fundSchema = z.object({
+            ID: z.number().optional(),
+            Target: z.string(),
+            Description: z.string(),
+            PaymentMethod: z.string(),
+            ReferenceNumber: z.number(),
+            Amount: z.number(),
+        });
+
+        const schema = z.object({
+            EntryID: z.number(),
+            TransactionID: z.number(),
+            Location: z.string(),
+            AccountID: z.number(),
+            Memo: z.string(),
+            Date: z.string(),
+            Void: z.number(),
+            EntryType: z.string(),
+            ClassID: z.number(),
+            funds: z.array(fundSchema),
+        });
+
+        const data = schema.parse(await request.json());
+
+        // Verify entry access
+        const [allowedEntries] = await connection.execute<RowDataPacket[]>(
+            `SELECT Entry.ID
+             FROM Entry
+             JOIN Register ON Register.ID = Entry.RegisterID
+             JOIN User ON (User.SchoolID = Register.SchoolID OR User.AccountType = 'Dev')
+             WHERE User.Email = ? AND Entry.ID = ?`,
+            [session.user.email, data.EntryID]
+        );
+
+        if (allowedEntries.length === 0) {
+            return NextResponse.json({ error: "Access Denied" }, { status: 403 });
+        }
+
+        // Update entry
+        await connection.execute<ResultSetHeader>(
+            `UPDATE Entry SET TransactionID = ?, Location = ?, AccountID = ?, Memo = ?, Date = ?, Void = ?, EntryType = ?, ClassID = ?
+             WHERE ID = ?`,
+            [data.TransactionID, data.Location, data.AccountID, data.Memo, data.Date, data.Void, data.EntryType, data.ClassID, data.EntryID]
+        );
+
+        // Delete existing funds for this entry
+        await connection.execute<ResultSetHeader>(
+            "DELETE FROM Fund WHERE EntryID = ?",
+            [data.EntryID]
+        );
+
+        // Insert new funds
+        for (const fund of data.funds) {
+            try {
+                await connection.execute<ResultSetHeader>(
+                    `INSERT INTO Fund (EntryID, Target, Description, PaymentMethod, ReferenceNumber, Amount)
+                     VALUES (?, ?, ?, ?, ?, ?)`,
+                    [data.EntryID, fund.Target, fund.Description, fund.PaymentMethod, fund.ReferenceNumber, fund.Amount]
+                );
+            } catch (fundErr) {
+                console.error("Fund insert error:", fundErr);
+                throw fundErr;
+            }
+        }
+
+        return NextResponse.json({ success: true });
+    } catch (err) {
+        console.error("PUT endpoint error:", err);
+        return NextResponse.json({ error: "Failed to update entry", details: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    }
+}
+
+export async function DELETE(request: Request) {
     try{
         const session = await getServerSession(authOptions);
         if (!session || !session.user?.email) {
             return NextResponse.json({error: "Not Authenticated"}, {status: 401});
         }
-        
+
         const schema = z.object({
             EntryID: z.number()
         });
@@ -203,6 +346,6 @@ export async function DEL(request: Request) {
     }
     catch (err) {
         console.log(err);
-        return NextResponse.json({error: "Failed to add entry"}, {status: 500});
+        return NextResponse.json({error: "Failed to delete entry"}, {status: 500});
     }
 }
