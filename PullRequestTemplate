@@ -9,15 +9,6 @@ Answer from the user's point of view.
 - Who is the user?
 - What task are they trying to complete?
 
----
-
-## Show your work (Required if UI changed)
-Add screenshots or a short screen recording.
-
-- Desktop view:
-- Mobile or small screen view:
-
----
 
 ## Next.js Basics Check
 - [ ] Pages or routes load correctly
