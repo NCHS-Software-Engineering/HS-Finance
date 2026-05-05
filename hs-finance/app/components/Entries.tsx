@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import type { Entry, Fund, Transaction, Register, Class, Account } from "@/types";
 import { sg } from "./entries/constants";
 import type { EntryFormData } from "./entries/types";
+import { exportEntriesPDF } from "@/utils/pdfExport";
 import EntriesHeader from "./entries/EntriesHeader";
 import EntriesToolbar from "./entries/EntriesToolbar";
 import EntryFormPanel from "./entries/EntryFormPanel";
@@ -174,6 +175,25 @@ export default function Entries() {
         setSubmitError(null);
         setSubmitSuccess(false);
         setShowForm(false);
+    };
+
+    const handleExport = () => {
+        try {
+            exportEntriesPDF({
+                entries,
+                funds,
+                transactions,
+                registers,
+                classes,
+                accounts,
+                selectedRegisterID,
+                formatDate,
+                formatCurrency,
+            });
+        } catch (error) {
+            console.error("Error exporting to PDF:", error);
+            alert("Failed to export entries to PDF");
+        }
     };
 
     const getFundsForEntry = (entryID: number) =>
@@ -465,6 +485,7 @@ export default function Entries() {
                     reconciliationMode={reconciliationMode}
                     isSavingReconciliation={isSavingReconciliation}
                     onToggleReconciliationMode={handleToggleReconciliationMode}
+                    onExport={handleExport}
                 />
 
                 {showForm && !reconciliationMode && selectedRegisterID !== "all" && (

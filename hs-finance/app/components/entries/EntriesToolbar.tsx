@@ -10,6 +10,7 @@ type EntriesToolbarProps = {
     reconciliationMode: boolean;
     isSavingReconciliation: boolean;
     onToggleReconciliationMode: () => void;
+    onExport?: () => void;
 };
 
 export default function EntriesToolbar({
@@ -21,6 +22,7 @@ export default function EntriesToolbar({
     reconciliationMode,
     isSavingReconciliation,
     onToggleReconciliationMode,
+    onExport,
 }: EntriesToolbarProps) {
     const canAddEntry = selectedRegisterID !== "all";
 
@@ -136,6 +138,36 @@ export default function EntriesToolbar({
                     {isSavingReconciliation
                         ? "Saving Reconciliation..."
                         : (reconciliationMode ? "Save + Exit Reconciliation" : "Enter Reconciliation Mode")}
+                </button>
+
+                <button
+                    onClick={onExport}
+                    style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.4rem",
+                        padding: "0.45rem 0.9rem",
+                        backgroundColor: "transparent",
+                        color: sg.textSecondary,
+                        border: `1px solid ${sg.border}`,
+                        borderRadius: "5px",
+                        fontFamily: sg.font,
+                        fontSize: "0.78rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.backgroundColor = sg.hoverBg;
+                        e.currentTarget.style.color = sg.textPrimary;
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.color = sg.textSecondary;
+                    }}
+                >
+                    <span style={{ fontSize: "1rem", lineHeight: 1 }}>📥</span>
+                    Export to PDF
                 </button>
 
                 {canAddEntry && (
