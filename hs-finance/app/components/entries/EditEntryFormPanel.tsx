@@ -1,18 +1,15 @@
 import React, { useState } from "react";
 import type { CSSProperties } from "react";
 import type { Account, Class } from "@/types";
-import type { Fund } from "@/types";
 import { sg, TRANSACTION_TYPES } from "./constants";
 import type { EntryFormData } from "./types";
-import FundsEditPanel from "./FundsEditPanel";
 
 type EditEntryFormPanelProps = {
     entryID: number;
     accounts: Account[];
     classes: Class[];
     defaultValues: EntryFormData;
-    defaultFunds: Fund[];
-    onSubmit: (data: EntryFormData, funds: Fund[]) => void;
+    onSubmit: (data: EntryFormData) => void;
     onCancel: () => void;
     isSubmitting: boolean;
     submitError: string | null;
@@ -23,14 +20,12 @@ export default function EditEntryFormPanel({
     accounts,
     classes,
     defaultValues,
-    defaultFunds,
     onSubmit,
     onCancel,
     isSubmitting,
     submitError,
 }: EditEntryFormPanelProps) {
     const [formData, setFormData] = useState<EntryFormData>(defaultValues);
-    const [funds, setFunds] = useState<Fund[]>(defaultFunds);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     const inputStyle = (hasError: boolean): CSSProperties => ({
@@ -78,7 +73,7 @@ export default function EditEntryFormPanel({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (validateForm()) {
-            onSubmit(formData, funds);
+            onSubmit(formData);
         }
     };
 
@@ -271,13 +266,86 @@ export default function EditEntryFormPanel({
                     </div>
                 </div>
 
-                <FundsEditPanel
-                    funds={funds}
-                    onFundsChange={setFunds}
-                    formatCurrency={(amount) =>
-                        new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Math.abs(amount))
-                    }
-                />
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: "0.85rem",
+                    marginBottom: "1.1rem",
+                }}>
+                    <div>
+                        <label style={labelStyle}>Target</label>
+                        <input
+                            type="text"
+                            style={inputStyle(false)}
+                            placeholder="Optional target"
+                            value={formData.Target}
+                            onChange={e => handleFieldChange("Target", e.target.value)}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={labelStyle}>Description</label>
+                        <input
+                            type="text"
+                            style={inputStyle(false)}
+                            placeholder="Optional description"
+                            value={formData.Description}
+                            onChange={e => handleFieldChange("Description", e.target.value)}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={labelStyle}>Payment Method</label>
+                        <input
+                            type="text"
+                            style={inputStyle(false)}
+                            placeholder="Optional method"
+                            value={formData.PaymentMethod}
+                            onChange={e => handleFieldChange("PaymentMethod", e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: "0.85rem",
+                    marginBottom: "1.1rem",
+                }}>
+                    <div>
+                        <label style={labelStyle}>Reference Number</label>
+                        <input
+                            type="number"
+                            style={inputStyle(false)}
+                            placeholder="Optional reference"
+                            value={formData.ReferenceNumber}
+                            onChange={e => handleFieldChange("ReferenceNumber", parseInt(e.target.value) || 0)}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={labelStyle}>Amount</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            style={inputStyle(false)}
+                            placeholder="0.00"
+                            value={formData.Amount}
+                            onChange={e => handleFieldChange("Amount", parseFloat(e.target.value) || 0)}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={labelStyle}>Class</label>
+                        <input
+                            type="text"
+                            style={inputStyle(false)}
+                            placeholder="Optional class"
+                            value={formData.Class}
+                            onChange={e => handleFieldChange("Class", e.target.value)}
+                        />
+                    </div>
+                </div>
 
                 <div style={{ display: "flex", gap: "0.6rem", justifyContent: "flex-end" }}>
                     <button

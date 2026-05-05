@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
-import type { Entry, Fund, Transaction } from "@/types";
-import { ENTRY_COLUMNS, FUND_COLUMNS, sg } from "./constants";
+import type { Entry, Transaction } from "@/types";
+import { ENTRY_COLUMNS, sg } from "./constants";
 
 type DepositPayment = {
     deposit: number | null;
@@ -12,7 +12,6 @@ type EntriesTableProps = {
     expandedEntries: Set<number>;
     onToggleExpanded: (entryID: number) => void;
     transactions: Transaction[];
-    getFundsForEntry: (entryID: number) => Fund[];
     getDepositPayment: (entry: Entry) => DepositPayment;
     getEntrySignedTotal: (entry: Entry) => number;
     formatDate: (date: Date | string) => string;
@@ -44,7 +43,6 @@ export default function EntriesTable({
     expandedEntries,
     onToggleExpanded,
     transactions,
-    getFundsForEntry,
     getDepositPayment,
     getEntrySignedTotal,
     formatDate,
@@ -94,9 +92,7 @@ export default function EntriesTable({
             )}
 
             {entries.map((entry, index) => {
-                const entryFunds = getFundsForEntry(entry.ID);
                 const isExpanded = expandedEntries.has(entry.ID);
-                const hasFunds = entryFunds.length > 0;
                 const { deposit, payment } = getDepositPayment(entry);
                 const entrySignedTotal = getEntrySignedTotal(entry);
                 const currentTransaction = transactions.find(t => Number(t.ID) === Number(entry.TransactionID));
@@ -134,7 +130,7 @@ export default function EntriesTable({
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 <span style={{
                                     fontSize: "0.6rem",
-                                    color: hasFunds ? sg.textMuted : sg.disabledBtn,
+                                    color: sg.textMuted,
                                     display: "inline-block",
                                     transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
                                     transition: "transform 0.15s ease",
@@ -262,71 +258,6 @@ export default function EntriesTable({
                             </div>
                         </div>
 
-                        {isExpanded && (
-                            <div style={{
-                                backgroundColor: sg.highlight,
-                                borderTop: `1px solid ${sg.secondary}`,
-                                borderLeft: `4px solid ${sg.brand}`,
-                                marginLeft: "1rem",
-                            }}>
-                                {!hasFunds ? (
-                                    <div style={{ padding: "1rem 1.25rem", fontSize: "0.8rem", color: sg.textMuted, fontFamily: sg.font, fontStyle: "italic" }}>
-                                        No funds linked to this entry.
-                                    </div>
-                                ) : (
-                                    <>
-                                        <div style={{
-                                            display: "grid",
-                                            gridTemplateColumns: FUND_COLUMNS,
-                                            padding: "0.5rem 1rem",
-                                            fontWeight: 600,
-                                            fontSize: "0.7rem",
-                                            color: sg.textMuted,
-                                            textTransform: "uppercase",
-                                            letterSpacing: "0.05em",
-                                            borderBottom: `1px solid ${sg.secondary}`,
-                                            fontFamily: sg.font,
-                                        }}>
-                                            <div style={cellStyle}>Fund ID</div>
-                                            <div style={cellStyle}>Account ID</div>
-                                            <div style={cellStyle}>Target</div>
-                                            <div style={cellStyle}>Description</div>
-                                            <div style={cellStyle}>Pay Method</div>
-                                            <div style={cellStyle}>Amount</div>
-                                        </div>
-                                        {entryFunds.map((fund, fi) => (
-                                            <div
-                                                key={fund.ID}
-                                                style={{
-                                                    display: "grid",
-                                                    gridTemplateColumns: FUND_COLUMNS,
-                                                    padding: "0.6rem 1rem",
-                                                    fontSize: "0.85rem",
-                                                    color: sg.textPrimary,
-                                                    backgroundColor: fi % 2 === 0 ? sg.highlight : sg.bgPanel,
-                                                    borderBottom: fi < entryFunds.length - 1 ? `1px solid ${sg.secondary}` : "none",
-                                                    fontFamily: sg.font,
-                                                    fontWeight: 400,
-                                                    alignItems: "center",
-                                                }}
-                                            >
-                                                <div style={{ ...cellStyle, fontWeight: 600, color: sg.brandHover }}>#{fund.ID}</div>
-                                                <div style={cellStyle}>{fund.AccountID}</div>
-                                                <div style={cellStyle}>{fund.Target}</div>
-                                                <div style={cellStyle}>{fund.Description}</div>
-                                                <div style={cellStyle}>{fund.PaymentMethod}</div>
-                                                <div style={{ ...cellStyle, fontWeight: 600, color: fund.Amount > 0 ? sg.success : sg.error }}>
-                                                    {formatCurrency(fund.Amount)}
-                                                </div>
-                                            </div>
-                                        ))}
-                                        <div style={{ padding: "0.4rem 1rem", fontSize: "0.75rem", color: sg.textMuted, fontFamily: sg.font }}>
-                                            {entryFunds.length} fund{entryFunds.length !== 1 ? "s" : ""} linked to this entry
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        )}
                     </div>
                 );
             })}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import type { Entry, Fund, Transaction, Register, Class, Account } from "@/types";
+import type { Entry, Transaction, Register, Class, Account } from "@/types";
 import { sg } from "./entries/constants";
 import type { EntryFormData } from "./entries/types";
 import EntriesHeader from "./entries/EntriesHeader";
@@ -13,7 +13,6 @@ import EntriesTable from "./entries/EntriesTable";
 
 export default function Entries() {
     const [entries, setEntries] = useState<Entry[]>([]);
-    const [funds, setFunds] = useState<Fund[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [registers, setRegisters] = useState<Register[]>([]);
     const [classes, setClasses] = useState<Class[]>([]);
@@ -30,7 +29,6 @@ export default function Entries() {
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
-    const [editingFunds, setEditingFunds] = useState<Fund[]>([]);
     const [isEditSubmitting, setIsEditSubmitting] = useState(false);
     const [editSubmitError, setEditSubmitError] = useState<string | null>(null);
     const [deletingEntryID, setDeletingEntryID] = useState<number | null>(null);
@@ -43,22 +41,22 @@ export default function Entries() {
     } = useForm<EntryFormData>({
         defaultValues: {
             Void: false,
+            Target: "",
+            Description: "",
+            PaymentMethod: "",
+            ReferenceNumber: 0,
+            Amount: 0,
+            Class: "",
         },
     });
 
     const refreshEntries = async () => {
         try {
-            const [entriesRes, fundsRes] = await Promise.all([
-                fetch("/api/entries"),
-                fetch("/api/funds"),
-            ]);
+            const entriesRes = await fetch("/api/entries");
             const entriesData = await entriesRes.json();
             setEntries(Array.isArray(entriesData) ? entriesData : entriesData.entries ?? []);
 
-            const fundsData = await fundsRes.json();
-            setFunds(Array.isArray(fundsData) ? fundsData : fundsData.funds ?? []);
-
-            console.log("refreshEntries completed, new entries:", entriesData, "new funds:", fundsData);
+            console.log("refreshEntries completed, new entries:", entriesData);
         } catch (error) {
             console.error("Error refreshing entries:", error);
         }
@@ -67,9 +65,8 @@ export default function Entries() {
     useEffect(() => {
         async function fetchData() {
             try {
-                const [entriesRes, fundsRes, transactionsRes, registersRes, classesRes, accountsRes] = await Promise.all([
+                const [entriesRes, transactionsRes, registersRes, classesRes, accountsRes] = await Promise.all([
                     fetch("/api/entries"),
-                    fetch("/api/funds"),
                     fetch("/api/transactions"),
                     fetch("/api/registers"),
                     fetch("/api/class"),
@@ -78,9 +75,6 @@ export default function Entries() {
 
                 const entriesData = await entriesRes.json();
                 setEntries(Array.isArray(entriesData) ? entriesData : entriesData.entries ?? []);
-
-                const fundsData = await fundsRes.json();
-                setFunds(Array.isArray(fundsData) ? fundsData : fundsData.funds ?? []);
 
                 const transactionsData = await transactionsRes.json();
                 setTransactions(Array.isArray(transactionsData) ? transactionsData : transactionsData.transactions ?? []);
@@ -97,7 +91,6 @@ export default function Entries() {
             } catch (error) {
                 console.error("Error fetching data:", error);
                 setEntries([]);
-                setFunds([]);
                 setTransactions([]);
                 setRegisters([]);
                 setClasses([]);
@@ -132,14 +125,20 @@ export default function Entries() {
         const payload = {
             TransactionID: data.TransactionID,
             Location:      data.Location,
-            AccountID:     data.AccountID,          // ← new field
+            AccountID:     data.AccountID,
             Memo:          data.Memo,
             Date:          formattedDate,
             RegisterID:    selectedRegister.ID,
-            Void:          data.Void ? 1 : 0,       // ← boolean → number
-            Rec:           0,                       // Reserved for future reconciliation mode
+            Void:          data.Void ? 1 : 0,
+            Rec:           0,
             EntryType:     data.EntryType,
-            ClassID:       data.ClassID,             // ← already number via valueAsNumber
+            ClassID:       data.ClassID,
+            Target:        data.Target,
+            Description:   data.Description,
+            PaymentMethod: data.PaymentMethod,
+            ReferenceNumber: data.ReferenceNumber,
+            Amount:        data.Amount,
+            Class:         data.Class,
         };
 
         try {
@@ -176,27 +175,18 @@ export default function Entries() {
         setShowForm(false);
     };
 
-    const getFundsForEntry = (entryID: number) =>
-        funds.filter(f => Number(f.EntryID) === Number(entryID));
-
     const getDepositPayment = (entry: Entry) => {
-        let deposit = 0;
-        let payment = 0;
         const transaction = transactions.find(t => Number(t.ID) === Number(entry.TransactionID));
-        getFundsForEntry(entry.ID).forEach(fund => {
-            if (transaction?.MoneyIn === 1) deposit += fund.Amount;
-            else payment += Math.abs(fund.Amount);
-        });
+        const amount = Math.abs(entry.Amount);
         return {
-            deposit: deposit > 0 ? deposit : null,
-            payment: payment > 0 ? payment : null,
+            deposit: transaction?.MoneyIn === 1 && amount > 0 ? amount : null,
+            payment: transaction?.MoneyIn !== 1 && amount > 0 ? amount : null,
         };
     };
 
     const getEntrySignedTotal = (entry: Entry) => {
         const transaction = transactions.find(t => Number(t.ID) === Number(entry.TransactionID));
-        const entryAmount = getFundsForEntry(entry.ID).reduce((sum, fund) => sum + Math.abs(fund.Amount), 0);
-        return transaction?.MoneyIn === 1 ? entryAmount : -entryAmount;
+        return transaction?.MoneyIn === 1 ? entry.Amount : -entry.Amount;
     };
 
     const getCurrentRecMap = () => {
@@ -286,13 +276,12 @@ export default function Entries() {
 
     const handleEditEntry = (entry: Entry) => {
         setEditingEntry(entry);
-        setEditingFunds(getFundsForEntry(entry.ID));
         setShowForm(false);
         setEditSubmitError(null);
     };
 
-    const handleEditSubmit = async (data: EntryFormData, updatedFunds: Fund[]) => {
-        console.log("handleEditSubmit called with data:", data, "funds:", updatedFunds);
+    const handleEditSubmit = async (data: EntryFormData) => {
+        console.log("handleEditSubmit called with data:", data);
         if (!editingEntry) return;
         setIsEditSubmitting(true);
         setEditSubmitError(null);
@@ -311,13 +300,12 @@ export default function Entries() {
             Void: data.Void ? 1 : 0,
             EntryType: data.EntryType,
             ClassID: data.ClassID,
-            funds: updatedFunds.map(f => ({
-                Target: f.Target,
-                Description: f.Description,
-                PaymentMethod: f.PaymentMethod,
-                ReferenceNumber: f.ReferenceNumber,
-                Amount: f.Amount,
-            })),
+            Target: data.Target,
+            Description: data.Description,
+            PaymentMethod: data.PaymentMethod,
+            ReferenceNumber: data.ReferenceNumber,
+            Amount: data.Amount,
+            Class: data.Class,
         };
 
         try {
@@ -338,7 +326,6 @@ export default function Entries() {
 
             await refreshEntries();
             setEditingEntry(null);
-            setEditingFunds([]);
         } catch (err) {
             console.error("Edit submission error:", err);
             setEditSubmitError(err instanceof Error ? err.message : "Failed to update entry.");
@@ -349,7 +336,6 @@ export default function Entries() {
 
     const handleCancelEdit = () => {
         setEditingEntry(null);
-        setEditingFunds([]);
         setEditSubmitError(null);
     };
 
@@ -387,7 +373,7 @@ export default function Entries() {
     const totalDeposits = filteredEntries.reduce((sum, entry) => {
         const transaction = transactions.find(t => Number(t.ID) === Number(entry.TransactionID));
         if (transaction?.MoneyIn === 1) {
-            return sum + getFundsForEntry(entry.ID).reduce((s, f) => s + f.Amount, 0);
+            return sum + entry.Amount;
         }
         return sum;
     }, 0);
@@ -395,7 +381,7 @@ export default function Entries() {
     const totalPayments = filteredEntries.reduce((sum, entry) => {
         const transaction = transactions.find(t => Number(t.ID) === Number(entry.TransactionID));
         if (transaction?.MoneyIn !== 1) {
-            return sum + getFundsForEntry(entry.ID).reduce((s, f) => s + Math.abs(f.Amount), 0);
+            return sum + Math.abs(entry.Amount);
         }
         return sum;
     }, 0);
@@ -497,8 +483,13 @@ export default function Entries() {
                             Void: !!editingEntry.Void,
                             EntryType: editingEntry.EntryType,
                             ClassID: editingEntry.ClassID || 0,
+                            Target: editingEntry.Target,
+                            Description: editingEntry.Description,
+                            PaymentMethod: editingEntry.PaymentMethod,
+                            ReferenceNumber: editingEntry.ReferenceNumber,
+                            Amount: editingEntry.Amount,
+                            Class: editingEntry.Class,
                         }}
-                        defaultFunds={editingFunds}
                         onSubmit={handleEditSubmit}
                         onCancel={handleCancelEdit}
                         isSubmitting={isEditSubmitting}
@@ -511,7 +502,6 @@ export default function Entries() {
                         expandedEntries={expandedEntries}
                         onToggleExpanded={toggleExpanded}
                         transactions={transactions}
-                        getFundsForEntry={getFundsForEntry}
                         getDepositPayment={getDepositPayment}
                         getEntrySignedTotal={getEntrySignedTotal}
                         formatDate={formatDate}

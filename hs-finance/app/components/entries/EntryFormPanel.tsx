@@ -273,6 +273,81 @@ export default function EntryFormPanel({
                     </div>
                 </div>
 
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: "0.85rem",
+                    marginBottom: "1.1rem",
+                }}>
+                    <div>
+                        <label style={labelStyle}>Target</label>
+                        <input
+                            type="text"
+                            style={inputStyle(false)}
+                            placeholder="Optional target"
+                            {...register("Target")}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={labelStyle}>Description</label>
+                        <input
+                            type="text"
+                            style={inputStyle(false)}
+                            placeholder="Optional description"
+                            {...register("Description")}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={labelStyle}>Payment Method</label>
+                        <input
+                            type="text"
+                            style={inputStyle(false)}
+                            placeholder="Optional method"
+                            {...register("PaymentMethod")}
+                        />
+                    </div>
+                </div>
+
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: "0.85rem",
+                    marginBottom: "1.1rem",
+                }}>
+                    <div>
+                        <label style={labelStyle}>Reference Number</label>
+                        <input
+                            type="number"
+                            style={inputStyle(false)}
+                            placeholder="Optional reference"
+                            {...register("ReferenceNumber", { valueAsNumber: true })}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={labelStyle}>Amount</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            style={inputStyle(false)}
+                            placeholder="0.00"
+                            {...register("Amount", { valueAsNumber: true })}
+                        />
+                    </div>
+
+                    <div>
+                        <label style={labelStyle}>Fund Class</label>
+                        <input
+                            type="text"
+                            style={inputStyle(false)}
+                            placeholder="Optional class"
+                            {...register("Class")}
+                        />
+                    </div>
+                </div>
+
                 <div style={{ display: "flex", gap: "0.6rem", justifyContent: "flex-end" }}>
                     <button
                         type="button"

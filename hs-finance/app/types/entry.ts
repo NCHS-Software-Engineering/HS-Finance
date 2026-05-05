@@ -10,5 +10,10 @@
     Rec: boolean;
     EntryType: string;
     ClassID?: number;
-    FundIDs: number[];
+    Target: string;
+    Description: string;
+    PaymentMethod: string;
+    ReferenceNumber: number;
+    Amount: number;
+    Class: string;
 };

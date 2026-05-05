@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 
         let query =
         `SELECT
-            Entry.ID, Entry.TransactionID, Entry.AccountID, Entry.Location, Entry.Memo, Entry.Date, Entry.RegisterID, Entry.Void, Entry.Rec, Entry.EntryType, Entry.ClassID
+            Entry.ID, Entry.TransactionID, Entry.AccountID, Entry.Location, Entry.Memo, Entry.Date, Entry.RegisterID, Entry.Void, Entry.Rec, Entry.EntryType, Entry.ClassID, Entry.Target, Entry.Description, Entry.PaymentMethod, Entry.ReferenceNumber, Entry.Amount, Entry.Class
             FROM Entry
             JOIN Register ON Register.ID = Entry.RegisterID
             JOIN User ON (User.SchoolID = Register.SchoolID OR User.AccountType = 'Dev')
@@ -123,7 +123,13 @@ export async function POST(request: Request) {
             Void: z.number(),
             Rec: z.number(),
             EntryType: z.string(),
-            ClassID: z.number()
+            ClassID: z.number(),
+            Target: z.string(),
+            Description: z.string(),
+            PaymentMethod: z.string(),
+            ReferenceNumber: z.number(),
+            Amount: z.number(),
+            Class: z.string()
         });
 
         const data = schema.parse(await request.json());
@@ -138,7 +144,13 @@ export async function POST(request: Request) {
             Void,
             Rec,
             EntryType,
-            ClassID
+            ClassID,
+            Target,
+            Description,
+            PaymentMethod,
+            ReferenceNumber,
+            Amount,
+            Class
         } = data;
         
         const [registers] = await connection.execute<RowDataPacket[]>(
@@ -151,8 +163,8 @@ export async function POST(request: Request) {
         }
 
         const [entryResult] = await connection.execute<ResultSetHeader>(
-            "INSERT INTO Entry (TransactionID, Location, AccountID, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [TransactionID, Location, AccountID, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID]
+            "INSERT INTO Entry (TransactionID, Location, AccountID, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID, Target, Description, PaymentMethod, ReferenceNumber, Amount, Class) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [TransactionID, Location, AccountID, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID, Target, Description, PaymentMethod, ReferenceNumber, Amount, Class]
         );
         const entryID = entryResult.insertId;
         return NextResponse.json({ success: true, entryID });
@@ -235,15 +247,6 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: "Not Authenticated" }, { status: 401 });
         }
 
-        const fundSchema = z.object({
-            ID: z.number().optional(),
-            Target: z.string(),
-            Description: z.string(),
-            PaymentMethod: z.string(),
-            ReferenceNumber: z.number(),
-            Amount: z.number(),
-        });
-
         const schema = z.object({
             EntryID: z.number(),
             TransactionID: z.number(),
@@ -254,7 +257,12 @@ export async function PUT(request: Request) {
             Void: z.number(),
             EntryType: z.string(),
             ClassID: z.number(),
-            funds: z.array(fundSchema),
+            Target: z.string(),
+            Description: z.string(),
+            PaymentMethod: z.string(),
+            ReferenceNumber: z.number(),
+            Amount: z.number(),
+            Class: z.string(),
         });
 
         const data = schema.parse(await request.json());
@@ -273,32 +281,12 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: "Access Denied" }, { status: 403 });
         }
 
-        // Update entry
+        // Update entry with all fields including fund fields
         await connection.execute<ResultSetHeader>(
-            `UPDATE Entry SET TransactionID = ?, Location = ?, AccountID = ?, Memo = ?, Date = ?, Void = ?, EntryType = ?, ClassID = ?
+            `UPDATE Entry SET TransactionID = ?, Location = ?, AccountID = ?, Memo = ?, Date = ?, Void = ?, EntryType = ?, ClassID = ?, Target = ?, Description = ?, PaymentMethod = ?, ReferenceNumber = ?, Amount = ?, Class = ?
              WHERE ID = ?`,
-            [data.TransactionID, data.Location, data.AccountID, data.Memo, data.Date, data.Void, data.EntryType, data.ClassID, data.EntryID]
+            [data.TransactionID, data.Location, data.AccountID, data.Memo, data.Date, data.Void, data.EntryType, data.ClassID, data.Target, data.Description, data.PaymentMethod, data.ReferenceNumber, data.Amount, data.Class, data.EntryID]
         );
-
-        // Delete existing funds for this entry
-        await connection.execute<ResultSetHeader>(
-            "DELETE FROM Fund WHERE EntryID = ?",
-            [data.EntryID]
-        );
-
-        // Insert new funds
-        for (const fund of data.funds) {
-            try {
-                await connection.execute<ResultSetHeader>(
-                    `INSERT INTO Fund (EntryID, Target, Description, PaymentMethod, ReferenceNumber, Amount)
-                     VALUES (?, ?, ?, ?, ?, ?)`,
-                    [data.EntryID, fund.Target, fund.Description, fund.PaymentMethod, fund.ReferenceNumber, fund.Amount]
-                );
-            } catch (fundErr) {
-                console.error("Fund insert error:", fundErr);
-                throw fundErr;
-            }
-        }
 
         return NextResponse.json({ success: true });
     } catch (err) {
@@ -334,14 +322,10 @@ export async function DELETE(request: Request) {
         }
 
         const [fundResult] = await connection.execute<ResultSetHeader>(
-            "DELETE FROM Fund WHERE Fund.EntryID = ?",
-            [EntryID]
-        );
-        const [entryResult] = await connection.execute<ResultSetHeader>(
             "DELETE FROM Entry WHERE Entry.ID = ?",
             [EntryID]
         );
-        return NextResponse.json({ success: true, entryResult });
+        return NextResponse.json({ success: true, fundResult });
 
     }
     catch (err) {
