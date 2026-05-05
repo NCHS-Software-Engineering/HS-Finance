@@ -30,6 +30,9 @@ export function Navbar() {
             <Link href="/transactions" className="cursor-pointer text-[#F87171] hover:text-[#ffffff] hover:underline underline-offset-4">
               Transactions
             </Link>
+            <Link href="/stats" className="cursor-pointer text-[#F87171] hover:text-[#ffffff] hover:underline underline-offset-4">
+              Stats
+            </Link>
             <Link href="/settings" className="cursor-pointer text-[#F87171] hover:text-[#ffffff] hover:underline underline-offset-4">
               Settings
             </Link>
