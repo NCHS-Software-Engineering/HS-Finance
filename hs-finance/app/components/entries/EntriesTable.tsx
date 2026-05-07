@@ -139,7 +139,7 @@ export default function EntriesTable({
                                     ▶
                                 </span>
                             </div>
-                            <div style={cellStyle}>{currentTransaction?.TransactionName}</div>
+                            <div style={cellStyle}>{currentTransaction?.TransactionName || "Unknown"}</div>
                             <div style={cellStyle}>{entry.Location}</div>
                             <div style={cellStyle}>{entry.Memo}</div>
                             <div style={cellStyle}>{formatDate(entry.Date)}</div>
@@ -173,7 +173,6 @@ export default function EntriesTable({
                             <div style={{ ...cellStyle, color: payment !== null ? sg.error : sg.textPrimary, fontWeight: payment !== null ? 600 : 400 }}>
                                 {payment !== null ? formatCurrency(payment) : ""}
                             </div>
-                            <div style={cellStyle}>{entry.EntryType}</div>
                             <div style={{ ...cellStyle, display: "flex", gap: "0.4rem", justifyContent: "center" }}>
                                 {!reconciliationMode && (
                                     <>
@@ -257,6 +256,47 @@ export default function EntriesTable({
                                 )}
                             </div>
                         </div>
+
+                        {isExpanded && (
+                            <div style={{
+                                backgroundColor: sg.highlight,
+                                borderTop: `1px solid ${sg.secondary}`,
+                                borderLeft: `4px solid ${sg.brand}`,
+                                marginLeft: "1rem",
+                                padding: "1rem 1.25rem",
+                            }}>
+                                <div style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "1fr 1fr",
+                                    gap: "1.5rem",
+                                }}>
+                                    <div>
+                                        <div style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: sg.textMuted, marginBottom: "0.5rem", fontFamily: sg.font }}>Target</div>
+                                        <div style={{ fontSize: "0.9rem", color: sg.textPrimary, fontFamily: sg.font }}>{entry.Target || "—"}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: sg.textMuted, marginBottom: "0.5rem", fontFamily: sg.font }}>Description</div>
+                                        <div style={{ fontSize: "0.9rem", color: sg.textPrimary, fontFamily: sg.font }}>{entry.Description || "—"}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: sg.textMuted, marginBottom: "0.5rem", fontFamily: sg.font }}>Payment Method</div>
+                                        <div style={{ fontSize: "0.9rem", color: sg.textPrimary, fontFamily: sg.font }}>{entry.PaymentMethod || "—"}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: sg.textMuted, marginBottom: "0.5rem", fontFamily: sg.font }}>Reference Number</div>
+                                        <div style={{ fontSize: "0.9rem", color: sg.textPrimary, fontFamily: sg.font }}>{entry.ReferenceNumber || "—"}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: sg.textMuted, marginBottom: "0.5rem", fontFamily: sg.font }}>Amount</div>
+                                        <div style={{ fontSize: "0.9rem", fontWeight: 600, color: entry.Amount > 0 ? sg.success : sg.error, fontFamily: sg.font }}>{formatCurrency(entry.Amount)}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: sg.textMuted, marginBottom: "0.5rem", fontFamily: sg.font }}>Class</div>
+                                        <div style={{ fontSize: "0.9rem", color: sg.textPrimary, fontFamily: sg.font }}>{entry.Class || "—"}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                     </div>
                 );

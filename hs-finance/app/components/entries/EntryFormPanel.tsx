@@ -225,21 +225,6 @@ export default function EntryFormPanel({
                     </div>
 
                     <div>
-                        <label style={labelStyle}>Entry Type</label>
-                        <select
-                            style={{ ...inputStyle(!!errors.EntryType), appearance: "none" }}
-                            {...register("EntryType", { required: "Required" })}
-                        >
-                            <option value="">Select...</option>
-                            <option value="single">Single</option>
-                            <option value="group">Group</option>
-                        </select>
-                        {errors.EntryType && (
-                            <p style={fieldErrorStyle}>{errors.EntryType.message}</p>
-                        )}
-                    </div>
-
-                    <div>
                         <label style={labelStyle}>Void</label>
                         <div style={{ display: "flex", alignItems: "center", height: "30px" }}>
                             <input

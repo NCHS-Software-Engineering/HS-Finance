@@ -30,4 +30,4 @@ export const TRANSACTION_TYPES = [
     { label: "Transfer Out", id: 7 },
 ] as const;
 
-export const ENTRY_COLUMNS = "32px 1fr 1.2fr 1.5fr 110px 70px 70px 90px 100px 100px 80px 120px";
+export const ENTRY_COLUMNS = "32px 1fr 1.2fr 1.5fr 110px 70px 70px 90px 100px 100px 120px";

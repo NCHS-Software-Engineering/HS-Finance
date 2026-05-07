@@ -6,7 +6,6 @@ export type EntryFormData = {
     Date: string;
     Void: boolean;
     Rec?: boolean;
-    EntryType: string;
     ClassID: number;
     Target: string;
     Description: string;

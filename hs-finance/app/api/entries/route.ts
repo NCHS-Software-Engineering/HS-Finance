@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 
         let query =
         `SELECT
-            Entry.ID, Entry.TransactionID, Entry.AccountID, Entry.Location, Entry.Memo, Entry.Date, Entry.RegisterID, Entry.Void, Entry.Rec, Entry.EntryType, Entry.ClassID, Entry.Target, Entry.Description, Entry.PaymentMethod, Entry.ReferenceNumber, Entry.Amount, Entry.Class
+            Entry.ID, Entry.TransactionID, Entry.AccountID, Entry.Location, Entry.Memo, Entry.Date, Entry.RegisterID, Entry.Void, Entry.Rec, Entry.ClassID, Entry.Target, Entry.Description, Entry.PaymentMethod, Entry.ReferenceNumber, Entry.Amount, Entry.Class
             FROM Entry
             JOIN Register ON Register.ID = Entry.RegisterID
             JOIN User ON (User.SchoolID = Register.SchoolID OR User.AccountType = 'Dev')
@@ -122,7 +122,6 @@ export async function POST(request: Request) {
             RegisterID: z.number(),
             Void: z.number(),
             Rec: z.number(),
-            EntryType: z.string(),
             ClassID: z.number(),
             Target: z.string(),
             Description: z.string(),
@@ -143,7 +142,6 @@ export async function POST(request: Request) {
             RegisterID,
             Void,
             Rec,
-            EntryType,
             ClassID,
             Target,
             Description,
@@ -163,8 +161,8 @@ export async function POST(request: Request) {
         }
 
         const [entryResult] = await connection.execute<ResultSetHeader>(
-            "INSERT INTO Entry (TransactionID, Location, AccountID, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID, Target, Description, PaymentMethod, ReferenceNumber, Amount, Class) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [TransactionID, Location, AccountID, Memo, Date, RegisterID, Void, Rec, EntryType, ClassID, Target, Description, PaymentMethod, ReferenceNumber, Amount, Class]
+            "INSERT INTO Entry (TransactionID, Location, AccountID, Memo, Date, RegisterID, Void, Rec, ClassID, Target, Description, PaymentMethod, ReferenceNumber, Amount, Class) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [TransactionID, Location, AccountID, Memo, Date, RegisterID, Void, Rec, ClassID, Target, Description, PaymentMethod, ReferenceNumber, Amount, Class]
         );
         const entryID = entryResult.insertId;
         return NextResponse.json({ success: true, entryID });
@@ -255,7 +253,6 @@ export async function PUT(request: Request) {
             Memo: z.string(),
             Date: z.string(),
             Void: z.number(),
-            EntryType: z.string(),
             ClassID: z.number(),
             Target: z.string(),
             Description: z.string(),
@@ -283,9 +280,9 @@ export async function PUT(request: Request) {
 
         // Update entry with all fields including fund fields
         await connection.execute<ResultSetHeader>(
-            `UPDATE Entry SET TransactionID = ?, Location = ?, AccountID = ?, Memo = ?, Date = ?, Void = ?, EntryType = ?, ClassID = ?, Target = ?, Description = ?, PaymentMethod = ?, ReferenceNumber = ?, Amount = ?, Class = ?
+            `UPDATE Entry SET TransactionID = ?, Location = ?, AccountID = ?, Memo = ?, Date = ?, Void = ?, ClassID = ?, Target = ?, Description = ?, PaymentMethod = ?, ReferenceNumber = ?, Amount = ?, Class = ?
              WHERE ID = ?`,
-            [data.TransactionID, data.Location, data.AccountID, data.Memo, data.Date, data.Void, data.EntryType, data.ClassID, data.Target, data.Description, data.PaymentMethod, data.ReferenceNumber, data.Amount, data.Class, data.EntryID]
+            [data.TransactionID, data.Location, data.AccountID, data.Memo, data.Date, data.Void, data.ClassID, data.Target, data.Description, data.PaymentMethod, data.ReferenceNumber, data.Amount, data.Class, data.EntryID]
         );
 
         return NextResponse.json({ success: true });

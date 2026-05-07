@@ -230,21 +230,6 @@ export default function EditEntryFormPanel({
                         )}
                     </div>
 
-                    <div>
-                        <label style={labelStyle}>Entry Type</label>
-                        <select
-                            style={{ ...inputStyle(!!errors.EntryType), appearance: "none" }}
-                            value={formData.EntryType}
-                            onChange={e => handleFieldChange("EntryType", e.target.value)}
-                        >
-                            <option value="">Select...</option>
-                            <option value="single">Single</option>
-                            <option value="group">Group</option>
-                        </select>
-                        {errors.EntryType && (
-                            <p style={fieldErrorStyle}>{errors.EntryType}</p>
-                        )}
-                    </div>
 
                     <div>
                         <label style={labelStyle}>Void</label>
