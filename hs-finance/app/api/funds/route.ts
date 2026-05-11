@@ -96,7 +96,7 @@ export async function POST(request: Request) {
     }
 }
 
-export async function DEL(request: Request) {
+export async function DELETE(request: Request) {
     try{
         const session = await getServerSession(authOptions);
         if (!session || !session.user?.email) {

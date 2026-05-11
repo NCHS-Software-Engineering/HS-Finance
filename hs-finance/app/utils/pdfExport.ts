@@ -66,13 +66,13 @@ export function exportEntriesPDF(options: ExportOptions) {
 
     // Title
     doc.setFontSize(16);
-    doc.setFont(undefined, "bold");
+    doc.setFont("helvetica", "bold");
     doc.text("Entries Report", margin, yPosition);
     yPosition += 10;
 
     // Export date
     doc.setFontSize(8);
-    doc.setFont(undefined, "normal");
+    doc.setFont("helvetica", "normal");
     doc.text(`Exported: ${new Date().toLocaleString()}`, margin, yPosition);
     yPosition += 10;
 
@@ -152,13 +152,13 @@ export function exportEntriesPDF(options: ExportOptions) {
         // Register section title
         checkNewPage(15);
         doc.setFontSize(12);
-        doc.setFont(undefined, "bold");
+        doc.setFont("helvetica", "bold");
         doc.text(`${group.register.RegisterName}`, margin, yPosition);
         yPosition += 8;
 
         // Table headers
         doc.setFontSize(8);
-        doc.setFont(undefined, "bold");
+        doc.setFont("helvetica", "bold");
         
         // Draw header background
         const tableWidth = columnWidths.reduce((a, b) => a + b, 0);
@@ -192,7 +192,7 @@ export function exportEntriesPDF(options: ExportOptions) {
 
         // Table rows
         doc.setFontSize(7);
-        doc.setFont(undefined, "normal");
+        doc.setFont("helvetica", "normal");
         let rowCount = 0;
 
         group.entries.forEach(entry => {
@@ -255,17 +255,17 @@ export function exportEntriesPDF(options: ExportOptions) {
         checkNewPage(10);
         yPosition += 5;
 
-        doc.setFont(undefined, "bold");
+        doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
         doc.text(`${group.register.RegisterName} Summary`, margin, yPosition);
         yPosition += 6;
 
-        doc.setFont(undefined, "normal");
+        doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
         doc.text(`Entries: ${group.entries.length}`, margin, yPosition);
         yPosition += 4;
 
-        doc.setFont(undefined, "bold");
+        doc.setFont("helvetica", "bold");
         doc.text(`Debits: ${formatCurrency(group.totalDebit)}`, margin, yPosition);
         yPosition += 4;
 
@@ -273,7 +273,7 @@ export function exportEntriesPDF(options: ExportOptions) {
         yPosition += 4;
 
         const balance = group.totalDebit - group.totalCredit;
-        doc.setFont(undefined, balance === 0 ? "bold" : "normal");
+        doc.setFont("helvetica", balance === 0 ? "bold" : "normal");
         doc.text(
             `Balance: ${formatCurrency(balance)} ${balance === 0 ? "✓" : ""}`,
             margin,
@@ -290,12 +290,12 @@ export function exportEntriesPDF(options: ExportOptions) {
         checkNewPage(15);
         yPosition += 5;
 
-        doc.setFont(undefined, "bold");
+        doc.setFont("helvetica", "bold");
         doc.setFontSize(12);
         doc.text("Grand Summary - All Registers", margin, yPosition);
         yPosition += 8;
 
-        doc.setFont(undefined, "normal");
+        doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
         doc.text(`Total Registers: ${registerGroups.length}`, margin, yPosition);
         yPosition += 5;
@@ -303,7 +303,7 @@ export function exportEntriesPDF(options: ExportOptions) {
         doc.text(`Total Entries: ${registerGroups.reduce((sum, g) => sum + g.entries.length, 0)}`, margin, yPosition);
         yPosition += 5;
 
-        doc.setFont(undefined, "bold");
+        doc.setFont("helvetica", "bold");
         doc.text(`Total Debits: ${formatCurrency(grandTotalDebit)}`, margin, yPosition);
         yPosition += 5;
 
@@ -311,7 +311,7 @@ export function exportEntriesPDF(options: ExportOptions) {
         yPosition += 5;
 
         const grandBalance = grandTotalDebit - grandTotalCredit;
-        doc.setFont(undefined, grandBalance === 0 ? "bold" : "normal");
+        doc.setFont("helvetica", grandBalance === 0 ? "bold" : "normal");
         doc.text(
             `Grand Balance: ${formatCurrency(grandBalance)} ${grandBalance === 0 ? "✓ Balanced" : ""}`,
             margin,
