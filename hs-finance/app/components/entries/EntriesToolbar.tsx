@@ -51,6 +51,7 @@ export default function EntriesToolbar({
                 <select
                     value={selectedRegisterID}
                     onChange={e => onSelectRegister(e.target.value)}
+                    aria-label={"Register Dropdown"}
                     style={{
                         padding: "0.4rem 2rem 0.4rem 0.6rem",
                         fontFamily: sg.font,
@@ -70,6 +71,7 @@ export default function EntriesToolbar({
                 >
                     <option 
                         value="all" 
+                        aria-label={"Select All Entries"}
                         style={{ 
                             fontWeight: 'bold', 
                             backgroundColor: '#f0f0f0', // Light grey background
@@ -77,10 +79,10 @@ export default function EntriesToolbar({
                         }}
                     >All Entries</option>
                 {registers.length === 0 && (
-                    <option value="">No registers found</option>
+                    <option value="" aria-label={"No Registers"}>No registers found</option>
                 )}
                 {registers.map(r => (
-                    <option key={r.ID} value={String(r.ID)}>
+                    <option key={r.ID} value={String(r.ID)} aria-label={"Select "+r.RegisterName}>
                         {r.RegisterName}
                     </option>
                 ))}
