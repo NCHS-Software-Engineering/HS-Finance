@@ -36,6 +36,9 @@ export function Navbar() {
             <Link href="/settings" className="cursor-pointer text-[#F87171] hover:text-[#ffffff] hover:underline underline-offset-4">
               Settings
             </Link>
+            <Link href="/about" className="cursor-pointer text-[#F87171] hover:text-[#ffffff] hover:underline underline-offset-4">
+              About
+            </Link>
 
             {/* Sign In when signed out, Profile button when signed in */}
             {session ? (

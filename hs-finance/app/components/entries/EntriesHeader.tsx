@@ -35,7 +35,7 @@ export default function EntriesHeader({
                 }}>
                     Entries
                 </h1>
-                <p style={{ color: sg.textMuted, fontSize: "0.875rem", marginTop: "0.25rem", fontWeight: 400 }}>
+                <p style={{ color: sg.textMuted, fontSize: "0.875rem", marginTop: "0.25rem", fontWeight: 400 }} aria-label="Selected Register">
                     {entryCount} {entryCount === 1 ? "entry" : "entries"}
                     {selectedRegisterName ? ` · ${selectedRegisterName}` : ""}
                 </p>

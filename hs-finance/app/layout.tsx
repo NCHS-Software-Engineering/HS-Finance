@@ -18,8 +18,43 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Home and School Booking",
+  title: "FinanceApp",
   description: "Accounting software for use by D203 H&S treasurers.",
+  keywords: [
+    "school finance",
+    "financial reporting",
+    "transactions",
+    "account reconciliation",
+    "audit reports",
+  ],
+
+  authors: [{ name: "Owen Schade" },{ name: "Sreeram Potnuru" },{ name: "Gunavardhan Singu" }],
+  openGraph: {
+    title: "FinanceApp",
+    description:
+      "Every dollar, every school, one place.",
+    url: "https://finances.redhawks.us/",
+    siteName: "FinanceApp",
+    images: [
+      {
+        url: "https://finances.redhawks.us/card.png",
+        width: 1200,
+        height: 630,
+        alt: "Finance Platform Dashboard",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+
+  // Twitter / X Card
+  twitter: {
+    card: "summary_large_image",
+    title: "FinanceApp",
+    description:
+      "Track transactions, reconcile accounts, and generate audit-ready reports across d203 schools.",
+    images: ["https://finances.redhawks.us/card.png"],
+  },
 };
 
 export default function RootLayout({
